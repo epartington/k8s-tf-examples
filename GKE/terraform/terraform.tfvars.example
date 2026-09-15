@@ -6,8 +6,8 @@
 # (See README.md for the full apply loop.)
 #
 # Not every stage consumes every variable; unused vars are simply ignored per
-# stage. Nothing sensitive lives here — Portkey/registry credentials are read
-# from Secret Manager at apply time (see sm_* IDs below).
+# stage. Nothing sensitive lives here — Portkey/registry credentials are supplied
+# via the console-downloaded values.yaml (see the 40-portkey section).
 # ---------------------------------------------------------------------------
 
 # --- Core (all stages) ---
@@ -45,17 +45,29 @@ namespace = "airs-gw"
 ksa_name  = "gateway-sa"
 
 # --- 40-portkey ---
-# Enterprise gateway image. docs/gcp.md uses docker.io/portkeyai/gateway_enterprise;
-# confirm which registry your Portkey credentials are issued for.
-image_repository = "registry.portkey.ai/airsgw/gateway_enterprise"
-image_tag        = "2.21.0"
-registry_server  = "registry.portkey.ai"
-
-# Secret Manager secret IDs (create these before applying stage 40 — see README).
-sm_aigw_client_auth      = "aigw-client-auth"
-sm_organisations_to_sync = "aigw-org-id"
-sm_docker_username       = "aigw-docker-user"
-sm_docker_password       = "aigw-docker-pass"
+# Credentials come from the values.yaml downloaded from the AI Gateway console.
+# Save it as GKE/terraform/40-portkey/values.yaml (see values.yaml.example) — the
+# values_file variable defaults to that path, so no config is needed here.
+# Override only if you keep it elsewhere:
+# values_file = "/abs/path/to/values.yaml"
+#
+# The chart is pulled from the official airs-gw Helm repo:
+#   https://portkey-ai.github.io/airs-gw-helm
+# Leave chart_version empty for the latest published chart, or pin for reproducibility.
+# chart_version = "1.2.0"
+#
+# Image repo/tag come from the console values.yaml / chart. Override only to swap
+# registries or hotfix a tag:
+# image_repository = "docker.io/portkeyai/gateway_enterprise"
+# image_tag        = "2.21.0"
+image_repository = ""
+image_tag        = ""
+#
+# MCP: server_mode "all" runs both the gateway (8787) and the MCP server (8788)
+# in one pod, and stage 50 fronts BOTH through the same HTTPS LB + Cloud Armor.
+# Set "mcp" for MCP-only, or "" for gateway-only (MCP not exposed).
+# server_mode = "all"
+# mcp_port    = 8788
 
 # --- 50-ingress ---
 # Cloud Armor allowlist for callers of the gateway. Everything else gets 403.
@@ -63,6 +75,12 @@ allowed_source_ranges = ["203.0.113.0/24"]
 
 # FQDN for the managed TLS cert. Leave empty to derive "<static-ip>.nip.io".
 domain = ""
+
+# MCP endpoint hostname (added as a SAN on the same cert, routed to port 8788
+# through the same LB + Cloud Armor). Leave empty to derive "mcp.<gateway-domain>";
+# with the nip.io fallback "mcp.<ip>.nip.io" resolves to the same LB IP for free.
+# Only used when the gateway runs with MCP enabled (server_mode "all"/"mcp").
+mcp_domain = ""
 
 # IAP stays off for the POV (it would block plain API calls). Cloud Armor is the
 # primary control. To enable, set true and provide iap_support_email.

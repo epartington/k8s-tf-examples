@@ -1,0 +1,48 @@
+# ---------------------------------------------------------------------------
+# airs-gw values — DOWNLOADED FROM THE AI GATEWAY CONSOLE
+#
+# HOW TO USE
+#   1. In the AI Gateway (Portkey) console, generate/download the hybrid
+#      deployment values.yaml for this data plane.
+#   2. Save it in THIS directory as:  values.yaml
+#      (i.e. GKE/terraform/40-portkey/values.yaml)
+#      The `values_file` variable already defaults to that path, so stage 40
+#      picks it up automatically — no extra config needed.
+#   3. Apply stage 40.
+#
+# The real values.yaml carries credentials and is gitignored — never commit it.
+# This .example file is only a reference for the shape of that download.
+#
+# DO NOT hand-set the GCP-specific bits below — Terraform overlays them on top
+# of this file at apply time, and its overlay wins:
+#   - serviceAccount.annotations."iam.gke.io/gcp-service-account"  (Workload Identity)
+#   - environment.data.GCP_AUTH_MODE = workload                    (Vertex auth)
+#   - service.type / service.annotations                           (container-native LB)
+#   - ingress.enabled = false                                      (ingress is stage 50)
+# ---------------------------------------------------------------------------
+
+# Registry pull credentials for the enterprise gateway image (from the console).
+imageCredentials:
+  - name: airsgatewayregistrycredentials
+    create: true
+    registry: https://registry.portkey.ai
+    username: "<from-console>"
+    password: "<from-console>"
+
+# Hybrid control-plane credentials (from the console).
+environment:
+  create: true
+  secret: true
+  data:
+    PORTKEY_CLIENT_AUTH: "<from-console>"
+    ORGANISATIONS_TO_SYNC: "<from-console>"
+    # LOG_STORE / ANALYTICS_STORE etc. reflect your console configuration.
+
+# Bundled Redis stays on for the POV; data service / MinIO / Milvus off.
+# (These usually come preset in the console download; shown here for reference.)
+dataservice:
+  enabled: false
+minio:
+  enabled: false
+milvus:
+  enabled: false

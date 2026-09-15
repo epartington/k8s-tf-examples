@@ -19,6 +19,12 @@ variable "domain" {
   default     = ""
 }
 
+variable "mcp_domain" {
+  type        = string
+  description = "FQDN for the MCP endpoint (added as a SAN on the same managed cert and routed to the MCP port via the same ALB/Cloud Armor). Leave empty to derive 'mcp.<gateway-domain>'. Only used when the gateway is deployed with MCP enabled (stage 40 server_mode 'all'/'mcp')."
+  default     = ""
+}
+
 variable "allowed_source_ranges" {
   type        = list(string)
   description = "Source CIDRs allowed through Cloud Armor to reach the gateway. Everything else is denied (403)."

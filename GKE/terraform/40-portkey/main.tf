@@ -14,102 +14,30 @@ data "terraform_remote_state" "iam" {
   }
 }
 
-# Portkey control-plane credentials, read from Secret Manager at apply time.
-data "google_secret_manager_secret_version" "client_auth" {
-  project = var.project_id
-  secret  = var.sm_aigw_client_auth
-}
-
-data "google_secret_manager_secret_version" "org_id" {
-  project = var.project_id
-  secret  = var.sm_organisations_to_sync
-}
-
-data "google_secret_manager_secret_version" "docker_user" {
-  project = var.project_id
-  secret  = var.sm_docker_username
-}
-
-data "google_secret_manager_secret_version" "docker_pass" {
-  project = var.project_id
-  secret  = var.sm_docker_password
-}
-
 locals {
   gsa_email = data.terraform_remote_state.iam.outputs.gsa_email
 
-  # dockerconfigjson for pulling the enterprise gateway image.
-  dockerconfig = jsonencode({
-    auths = {
-      (var.registry_server) = {
-        username = data.google_secret_manager_secret_version.docker_user.secret_data
-        password = data.google_secret_manager_secret_version.docker_pass.secret_data
-        auth = base64encode(
-          "${data.google_secret_manager_secret_version.docker_user.secret_data}:${data.google_secret_manager_secret_version.docker_pass.secret_data}"
-        )
-      }
-    }
-  })
-}
+  # MCP is enabled whenever the server runs in "all" or "mcp" mode. In "all"
+  # mode the gateway pod exposes both gateway_port and mcp_port on the same
+  # Service, and stage 50 fronts both via the same ALB/Cloud Armor.
+  mcp_enabled = contains(["all", "mcp"], var.server_mode)
 
-resource "kubernetes_namespace" "airs" {
-  metadata {
-    name = var.namespace
-  }
-}
+  # values.yaml downloaded from the AI Gateway console (carries credentials).
+  # Defaults to this stage directory so dropping the file in place just works.
+  values_file = var.values_file != "" ? var.values_file : "${path.module}/values.yaml"
 
-# Sensitive control-plane env, sourced from Secret Manager. The chart references
-# these keys via environment.existingSecret + secretKeys (explicit mode).
-resource "kubernetes_secret" "env" {
-  metadata {
-    name      = var.env_secret_name
-    namespace = kubernetes_namespace.airs.metadata[0].name
-  }
+  # Only override the image repo/tag when explicitly set; otherwise let the
+  # console values.yaml / chart drive the version.
+  gateway_image = merge(
+    var.image_repository != "" ? { repository = var.image_repository } : {},
+    var.image_tag != "" ? { tag = var.image_tag } : {},
+  )
 
-  data = {
-    PORTKEY_CLIENT_AUTH   = data.google_secret_manager_secret_version.client_auth.secret_data
-    ORGANISATIONS_TO_SYNC = data.google_secret_manager_secret_version.org_id.secret_data
-  }
-
-  type = "Opaque"
-}
-
-# Registry pull secret for the enterprise gateway image.
-resource "kubernetes_secret" "registry" {
-  metadata {
-    name      = var.pull_secret_name
-    namespace = kubernetes_namespace.airs.metadata[0].name
-  }
-
-  data = {
-    ".dockerconfigjson" = local.dockerconfig
-  }
-
-  type = "kubernetes.io/dockerconfigjson"
-}
-
-resource "helm_release" "airs_gw" {
-  name      = var.helm_release_name
-  chart     = var.chart_path
-  namespace = kubernetes_namespace.airs.metadata[0].name
-
-  # Chart renders k8s objects directly (no external repo); wait for rollout.
-  wait    = true
-  timeout = 600
-
-  values = [yamlencode({
-    images = {
-      gatewayImage = {
-        repository = var.image_repository
-        tag        = var.image_tag
-      }
-    }
-
-    imagePullSecrets = [
-      { name = kubernetes_secret.registry.metadata[0].name },
-    ]
-
-    # Workload Identity: bind the KSA to the Vertex-enabled GSA (stage 30-iam).
+  # GCP-specific overlay merged on top of the console values.yaml. These are the
+  # bits the console file cannot know: the Workload Identity SA annotation (the
+  # GSA is created in stage 30-iam), container-native LB annotations for the
+  # stage-50 ingress, Vertex workload auth mode, and disabling the chart ingress.
+  gcp_overlay = {
     serviceAccount = {
       create = true
       name   = var.ksa_name
@@ -118,28 +46,21 @@ resource "helm_release" "airs_gw" {
       }
     }
 
-    # Sensitive keys come from the existing Secret; the rest are plain values.
-    # REDIS_URL / CACHE_STORE are intentionally omitted so the chart wires the
-    # bundled Redis (redis://<release>-redis:6379) automatically.
+    # Vertex AI via GKE Workload Identity, plus deterministic gateway/MCP mode
+    # (overlay wins, so the POV controls these regardless of the console file).
     environment = {
-      create         = false
-      existingSecret = var.env_secret_name
-      secretKeys = [
-        "PORTKEY_CLIENT_AUTH",
-        "ORGANISATIONS_TO_SYNC",
-      ]
       data = {
-        GCP_AUTH_MODE   = "workload"
-        LOG_STORE       = "control_plane"
-        ANALYTICS_STORE = "control_plane"
-        SERVICE_NAME    = "airsgateway"
-        PORT            = tostring(var.gateway_port)
-        SERVER_MODE     = "all"
+        GCP_AUTH_MODE = "workload"
+        SERVER_MODE   = var.server_mode
+        MCP_PORT      = tostring(var.mcp_port)
       }
     }
 
-    # ClusterIP + container-native LB (NEG) so the external ALB in stage 50 can
-    # target pods directly. The BackendConfig itself is created in stage 50.
+    # ClusterIP + NEG so the external ALB in stage 50 targets pods directly.
+    # The chart adds the MCP port (mcp_port) to this same Service automatically
+    # when SERVER_MODE is "all"/"mcp", so no extra port entry is needed here.
+    # The BackendConfig itself is created in stage 50; the "default" mapping
+    # applies it (Cloud Armor + health check) to BOTH the gateway and MCP ports.
     service = {
       type = "ClusterIP"
       port = var.gateway_port
@@ -149,17 +70,37 @@ resource "helm_release" "airs_gw" {
       }
     }
 
-    # Bundled Redis stays on (control-plane log/analytics store, no MinIO/Milvus).
-    dataservice = { enabled = false }
-    minio       = { enabled = false }
-    milvus      = { enabled = false }
+    # Optional image override (empty map merges harmlessly over the base values).
+    images = {
+      gatewayImage = local.gateway_image
+    }
 
     # Ingress is managed in stage 50-ingress, not by the chart.
     ingress = { enabled = false }
-  })]
+  }
+}
 
-  depends_on = [
-    kubernetes_secret.env,
-    kubernetes_secret.registry,
+resource "kubernetes_namespace" "airs" {
+  metadata {
+    name = var.namespace
+  }
+}
+
+resource "helm_release" "airs_gw" {
+  name       = var.helm_release_name
+  repository = var.chart_repository
+  chart      = var.chart_name
+  version    = var.chart_version != "" ? var.chart_version : null
+  namespace  = kubernetes_namespace.airs.metadata[0].name
+
+  # Pulled from the official airs-gw Helm repo; wait for rollout.
+  wait    = true
+  timeout = 600
+
+  # Base = console values.yaml (credentials); overlay = GCP-specific settings.
+  # Later entries win, so the overlay overrides the base where they intersect.
+  values = [
+    file(local.values_file),
+    yamlencode(local.gcp_overlay),
   ]
 }

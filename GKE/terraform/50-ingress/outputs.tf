@@ -13,7 +13,17 @@ output "gateway_url" {
   value       = "https://${local.domain}"
 }
 
+output "mcp_domain" {
+  description = "MCP hostname on the managed cert (empty when MCP is disabled in stage 40)."
+  value       = local.mcp_enabled ? local.mcp_domain : ""
+}
+
+output "mcp_url" {
+  description = "Base URL for the MCP endpoint once DNS/cert are ready (empty when MCP is disabled)."
+  value       = local.mcp_enabled ? "https://${local.mcp_domain}" : ""
+}
+
 output "security_policy_name" {
-  description = "Cloud Armor security policy applied to the backend."
+  description = "Cloud Armor security policy applied to the backend (covers both the gateway and MCP ports)."
   value       = google_compute_security_policy.armor.name
 }

@@ -1,6 +1,6 @@
 variable "project_id" {
   type        = string
-  description = "Existing GCP project ID that hosts the cluster and Secret Manager secrets."
+  description = "Existing GCP project ID that hosts the cluster."
 }
 
 variable "region" {
@@ -31,40 +31,40 @@ variable "helm_release_name" {
   default     = "airs-gw"
 }
 
-variable "chart_path" {
+variable "chart_repository" {
   type        = string
-  description = "Path to the vendored airs-gw Helm chart, relative to this stage directory."
-  default     = "../../docs/airs-gw-helm-main/charts/airs-gw"
+  description = "Helm repository URL for the airs-gw chart."
+  default     = "https://portkey-ai.github.io/airs-gw-helm"
+}
+
+variable "chart_name" {
+  type        = string
+  description = "Chart name within the repository."
+  default     = "airs-gw"
+}
+
+variable "chart_version" {
+  type        = string
+  description = "Chart version to install. Leave empty to pull the latest published version. Pin for reproducible applies."
+  default     = ""
+}
+
+variable "values_file" {
+  type        = string
+  description = "Path to the values.yaml downloaded from the AI Gateway console (carries the Portkey credentials). Defaults to values.yaml in this stage directory (40-portkey), so simply placing the downloaded file there works. See values.yaml.example."
+  default     = ""
 }
 
 variable "image_repository" {
   type        = string
-  description = "Gateway image repository. Enterprise registry by default; docs/gcp.md uses docker.io/portkeyai/gateway_enterprise."
-  default     = "registry.portkey.ai/airsgw/gateway_enterprise"
+  description = "Override the gateway image repository. Leave empty to use whatever the console values.yaml / chart specify."
+  default     = ""
 }
 
 variable "image_tag" {
   type        = string
-  description = "Gateway image tag (minimum supported 2.15.0)."
-  default     = "2.21.0"
-}
-
-variable "registry_server" {
-  type        = string
-  description = "Registry host for the image pull secret (must match the registry your Portkey creds are issued for)."
-  default     = "registry.portkey.ai"
-}
-
-variable "pull_secret_name" {
-  type        = string
-  description = "Name of the dockerconfigjson pull secret created in the namespace."
-  default     = "airs-gw-registry"
-}
-
-variable "env_secret_name" {
-  type        = string
-  description = "Name of the Kubernetes Secret holding the Portkey control-plane credentials consumed by the chart."
-  default     = "airs-gw-env"
+  description = "Override the gateway image tag. Leave empty to use the version pinned by the console values.yaml / chart appVersion. Set only to hotfix a specific tag (minimum supported 2.15.0)."
+  default     = ""
 }
 
 variable "gateway_port" {
@@ -73,34 +73,25 @@ variable "gateway_port" {
   default     = 8787
 }
 
+variable "server_mode" {
+  type        = string
+  description = "Chart SERVER_MODE. 'all' runs both the gateway (gateway_port) and the MCP server (mcp_port) in one pod; 'mcp' runs only MCP; '' runs only the gateway. The POV uses 'all' so both are fronted by the stage-50 ALB."
+  default     = "all"
+
+  validation {
+    condition     = contains(["all", "mcp", ""], var.server_mode)
+    error_message = "server_mode must be one of: \"all\", \"mcp\", or \"\" (gateway only)."
+  }
+}
+
+variable "mcp_port" {
+  type        = number
+  description = "MCP service/container port (chart MCP_PORT). Exposed on the same Service as the gateway when server_mode is 'all' or 'mcp'."
+  default     = 8788
+}
+
 variable "backend_config_name" {
   type        = string
   description = "Name of the BackendConfig created in stage 50-ingress; referenced here via the Service annotation."
   default     = "airs-gw-backendconfig"
-}
-
-# --- Secret Manager secret IDs (values are read at apply time, never stored in tfvars) ---
-
-variable "sm_aigw_client_auth" {
-  type        = string
-  description = "Secret Manager secret ID holding PORTKEY_CLIENT_AUTH (the hybrid license key)."
-  default     = "aigw-client-auth"
-}
-
-variable "sm_organisations_to_sync" {
-  type        = string
-  description = "Secret Manager secret ID holding ORGANISATIONS_TO_SYNC (the Portkey org ID)."
-  default     = "aigw-org-id"
-}
-
-variable "sm_docker_username" {
-  type        = string
-  description = "Secret Manager secret ID holding the registry username."
-  default     = "aigw-docker-user"
-}
-
-variable "sm_docker_password" {
-  type        = string
-  description = "Secret Manager secret ID holding the registry password."
-  default     = "aigw-docker-pass"
 }

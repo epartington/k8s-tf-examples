@@ -31,8 +31,19 @@ locals {
   service_port        = data.terraform_remote_state.portkey.outputs.service_port
   backend_config_name = data.terraform_remote_state.portkey.outputs.backend_config_name
 
+  # MCP: only front it when stage 40 actually enabled it (server_mode all/mcp).
+  mcp_enabled = data.terraform_remote_state.portkey.outputs.mcp_enabled
+  mcp_port    = data.terraform_remote_state.portkey.outputs.mcp_service_port
+
   # Managed cert needs a real FQDN. Fall back to nip.io pointing at the LB IP.
   domain = var.domain != "" ? var.domain : "${local.static_ip_address}.nip.io"
+
+  # MCP gets its own hostname on the SAME cert/IP/Cloud Armor. With the nip.io
+  # fallback, "mcp.<ip>.nip.io" resolves to the same LB IP automatically.
+  mcp_domain = var.mcp_domain != "" ? var.mcp_domain : "mcp.${local.domain}"
+
+  # Domains on the managed cert: add the MCP SAN only when MCP is enabled.
+  cert_domains = local.mcp_enabled ? [local.domain, local.mcp_domain] : [local.domain]
 }
 
 # Cloud Armor: allow only the POV source ranges, deny everything else.
@@ -75,7 +86,7 @@ resource "google_compute_managed_ssl_certificate" "cert" {
   project = var.project_id
 
   managed {
-    domains = [local.domain]
+    domains = local.cert_domains
   }
 }
 
@@ -158,11 +169,36 @@ resource "kubernetes_ingress_v1" "gateway" {
   }
 
   spec {
+    # Gateway on the primary domain (and any unmatched host).
     default_backend {
       service {
         name = local.service_name
         port {
           number = local.service_port
+        }
+      }
+    }
+
+    # MCP on its own hostname, same Service/pod (mcp_port), same ALB, same
+    # Cloud Armor + cert. "/*" forwards every path so we don't depend on the
+    # MCP server's internal path layout.
+    dynamic "rule" {
+      for_each = local.mcp_enabled ? [1] : []
+      content {
+        host = local.mcp_domain
+        http {
+          path {
+            path      = "/*"
+            path_type = "ImplementationSpecific"
+            backend {
+              service {
+                name = local.service_name
+                port {
+                  number = local.mcp_port
+                }
+              }
+            }
+          }
         }
       }
     }

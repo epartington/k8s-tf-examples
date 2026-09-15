@@ -21,7 +21,6 @@ variable "activate_apis" {
     "container.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
-    "secretmanager.googleapis.com",
     "iap.googleapis.com",
     "aiplatform.googleapis.com",
     "certificatemanager.googleapis.com",
