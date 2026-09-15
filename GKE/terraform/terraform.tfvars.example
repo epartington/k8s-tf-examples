@@ -1,0 +1,70 @@
+# ---------------------------------------------------------------------------
+# Shared inputs for the POV GKE + PRISMA AIRS / Portkey AI Gateway stages.
+#
+# Copy to terraform.tfvars and pass into each stage with:
+#   terraform apply -var-file=../terraform.tfvars
+# (See README.md for the full apply loop.)
+#
+# Not every stage consumes every variable; unused vars are simply ignored per
+# stage. Nothing sensitive lives here — Portkey/registry credentials are read
+# from Secret Manager at apply time (see sm_* IDs below).
+# ---------------------------------------------------------------------------
+
+# --- Core (all stages) ---
+project_id = "my-pov-project"
+region     = "us-central1"
+
+# GCS bucket for remote state. Must be globally unique. Created by 00-bootstrap
+# and passed to every other stage via: terraform init -backend-config="bucket=..."
+state_bucket = "my-pov-project-airs-gw-tfstate"
+
+# --- 10-network ---
+subnet_cidr = "10.10.0.0/20"
+# Leave pods_cidr / services_cidr empty to let GKE auto-allocate Google-managed
+# secondary ranges (the "pre-allocated Google ranges" path). Set both to pin them.
+# pods_cidr     = "10.20.0.0/16"
+# services_cidr = "10.30.0.0/20"
+master_ipv4_cidr = "172.16.0.0/28"
+
+# --- 20-gke ---
+node_count   = 2
+machine_type = "n1-standard-4" # 4 vCPU / 16 GB
+# machine_type = "e2-standard-4" # cheaper GKE-native alternative (4 vCPU / 16 GB)
+release_channel = "REGULAR"
+
+# CIDRs allowed to reach the public control-plane endpoint (kubectl/helm from
+# your operator or CI egress IP). Required so stages 40/50 can apply.
+authorized_networks = ["203.0.113.10/32"]
+
+# --- 30-iam ---
+# Defaults to project_id when empty. Set for cross-project Vertex access.
+model_project_id = ""
+
+# --- 30-iam / 40-portkey (must match across both) ---
+namespace = "airs-gw"
+ksa_name  = "gateway-sa"
+
+# --- 40-portkey ---
+# Enterprise gateway image. docs/gcp.md uses docker.io/portkeyai/gateway_enterprise;
+# confirm which registry your Portkey credentials are issued for.
+image_repository = "registry.portkey.ai/airsgw/gateway_enterprise"
+image_tag        = "2.21.0"
+registry_server  = "registry.portkey.ai"
+
+# Secret Manager secret IDs (create these before applying stage 40 — see README).
+sm_aigw_client_auth      = "aigw-client-auth"
+sm_organisations_to_sync = "aigw-org-id"
+sm_docker_username       = "aigw-docker-user"
+sm_docker_password       = "aigw-docker-pass"
+
+# --- 50-ingress ---
+# Cloud Armor allowlist for callers of the gateway. Everything else gets 403.
+allowed_source_ranges = ["203.0.113.0/24"]
+
+# FQDN for the managed TLS cert. Leave empty to derive "<static-ip>.nip.io".
+domain = ""
+
+# IAP stays off for the POV (it would block plain API calls). Cloud Armor is the
+# primary control. To enable, set true and provide iap_support_email.
+iap_enabled = false
+# iap_support_email = "security@example.com"

@@ -1,0 +1,28 @@
+# Terraform
+# Local provider plugins and other init artifacts (never commit binaries).
+**/.terraform/*
+
+# State files (may contain secrets).
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# Real variable values — commit only the example.
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# Override files (local-only convenience).
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI config / plan output.
+.terraformrc
+terraform.rc
+*.tfplan
+
+# macOS
+.DS_Store
