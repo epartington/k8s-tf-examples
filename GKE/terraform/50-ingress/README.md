@@ -43,6 +43,50 @@ cd ..
 `ingress_ip`, `gateway_domain`, `gateway_url`, `mcp_domain`, `mcp_url`,
 `security_policy_name`.
 
+## Validate end-to-end
+
+Once the cert is `ACTIVE` (see Notes), test from a host **inside
+`allowed_source_ranges`** (a non-allowlisted source gets a `403` from Cloud Armor).
+The call targets the exposed frontend domain — pull it from the outputs so you don't
+hand-copy the IP:
+
+Set these four variables, then run the command block unchanged:
+
+```sh
+# --- fill in ---
+PORTKEY_API_KEY="..."       # Portkey API/virtual/workspace key from the control plane
+PROVIDER_SLUG="vertex-ai"   # Vertex provider slug you configured (auth type: workload)
+MODEL="gemini-2.5-flash"    # a Vertex model available in your vertex_region
+# --- derived ---
+DOMAIN=$(terraform -chdir=50-ingress output -raw gateway_domain)   # e.g. 34.x.x.x.nip.io
+
+curl -s "https://${DOMAIN}/v1/chat/completions" \
+  -H "content-type: application/json" \
+  -H "x-portkey-api-key: ${PORTKEY_API_KEY}" \
+  -H "x-portkey-provider: @${PROVIDER_SLUG}" \
+  -d "{
+        \"model\": \"@${PROVIDER_SLUG}/${MODEL}\",
+        \"messages\": [{\"role\": \"user\", \"content\": \"Reply with the single word: pong\"}]
+      }"
+```
+
+`PROVIDER_SLUG` is used in both the `x-portkey-provider` header and the `model`
+prefix, so setting it once covers both.
+
+Expect a `200` with a completion, and the request visible in **Portkey → Logs**.
+Then confirm the WAF from a **non-allowlisted** IP:
+
+```sh
+curl -s -o /dev/null -w '%{http_code}\n' "https://${DOMAIN}/v1/health"   # -> 403
+```
+
+MCP validates the same way against `mcp_url` (`https://mcp.<domain>`), through the
+same cert and Cloud Armor policy.
+
+> The nip.io domain is real DNS, so this works from any allowlisted machine without
+> editing `/etc/hosts`. With a self-managed domain instead, ensure its A record
+> points at `ingress_ip` first.
+
 ## Notes
 
 - **`apply` returns fast, but the endpoint isn't live immediately.** The managed

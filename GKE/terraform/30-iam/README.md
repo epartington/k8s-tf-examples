@@ -35,8 +35,20 @@ cd ..
 
 ## Outputs
 
-`gsa_email`, `namespace`, `ksa_name`, `model_project_id`. Stage 40 reads `gsa_email`
-(for the KSA annotation) and reuses `namespace`/`ksa_name`.
+`gsa_email`, `namespace`, `ksa_name`, `model_project_id`, `vertex_project_id`,
+`vertex_region`. Stage 40 reads `gsa_email` (for the KSA annotation) and reuses
+`namespace`/`ksa_name`.
+
+To configure the Vertex AI provider in the Portkey/AIRS console (auth type
+**workload**), read the two values it asks for straight from this stage:
+
+```sh
+terraform -chdir=30-iam output -raw vertex_project_id   # Vertex Project ID
+terraform -chdir=30-iam output -raw vertex_region       # Vertex Region (e.g. us-central1)
+```
+
+`vertex_project_id` is an alias of `model_project_id`; `vertex_region` reflects the
+`region` input.
 
 ## Notes
 
