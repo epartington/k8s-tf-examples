@@ -68,6 +68,13 @@ image_tag        = ""
 # Set "mcp" for MCP-only, or "" for gateway-only (MCP not exposed).
 # server_mode = "all"
 # mcp_port    = 8788
+#
+# Set true ONLY if a TLS-inspecting proxy (corporate MITM) sits between the
+# machine running Terraform and the cluster control-plane endpoint. It makes the
+# kubernetes/helm providers (stages 40 and 50) skip cert verification — the proxy
+# presents its own cert instead of the GKE cluster CA. The bearer token still
+# authenticates. Leave false on a direct/secure network.
+# cluster_insecure_tls = false
 
 # --- 50-ingress ---
 # Cloud Armor allowlist for callers of the gateway. Everything else gets 403.

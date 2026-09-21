@@ -95,3 +95,9 @@ variable "backend_config_name" {
   description = "Name of the BackendConfig created in stage 50-ingress; referenced here via the Service annotation."
   default     = "airs-gw-backendconfig"
 }
+
+variable "cluster_insecure_tls" {
+  type        = bool
+  description = "Skip TLS verification of the cluster control-plane endpoint for the kubernetes/helm providers. Set true ONLY when a TLS-inspecting proxy (corporate MITM) sits between the operator and the cluster, so the endpoint presents the proxy's cert instead of the GKE cluster CA. The bearer token still authenticates the request. Leave false for a normal secure connection."
+  default     = false
+}

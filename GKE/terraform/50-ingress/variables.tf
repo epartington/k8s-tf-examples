@@ -80,3 +80,9 @@ variable "iap_oauth_secret_name" {
   description = "Name of the Kubernetes Secret holding the IAP OAuth client credentials (client_id/client_secret)."
   default     = "airs-gw-iap-oauth"
 }
+
+variable "cluster_insecure_tls" {
+  type        = bool
+  description = "Skip TLS verification of the cluster control-plane endpoint for the kubernetes provider. Set true ONLY when a TLS-inspecting proxy (corporate MITM) sits between the operator and the cluster, so the endpoint presents the proxy's cert instead of the GKE cluster CA. The bearer token still authenticates the request. Leave false for a normal secure connection."
+  default     = false
+}

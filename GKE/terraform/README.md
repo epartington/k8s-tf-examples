@@ -86,6 +86,69 @@ and security policies).
 > stages can't connect. Find it with `curl -s ifconfig.me`. If your IP changes
 > (dynamic/VPN), update the value and re-apply stage 20 before 40/50.
 
+### Behind a TLS-inspecting proxy (corporate MITM)
+
+Some corporate networks run a TLS-inspecting proxy that terminates and re-signs
+HTTPS with an internal root CA. On such a network the tools here validate against a
+CA that doesn't match the proxy's cert and fail. This is **environment-specific** —
+on a direct network you skip this whole section and leave every default as-is.
+
+#### Symptoms
+
+- `terraform apply` (stage 40/50): `Error: … tls: failed to verify certificate:
+  x509: certificate signed by unknown authority` when the kubernetes/helm providers
+  POST to the cluster endpoint.
+- `gcloud` / `kubectl` / `curl`: `SSL certificate problem` / `certificate signed by
+  unknown authority`.
+
+Root cause: these tools validate against an **explicit** CA (Terraform's
+`cluster_ca_certificate`, kubeconfig CA) or their **own bundled** CA (gcloud, curl,
+Go), not the macOS system keychain — so the corporate root isn't trusted.
+
+#### Fixes (per tool)
+
+1. **Terraform (stages 40 & 50).** Set in `terraform.tfvars`:
+
+   ```hcl
+   cluster_insecure_tls = true
+   ```
+
+   This makes the kubernetes/helm providers skip cert verification of the cluster
+   endpoint and drop `cluster_ca_certificate`; the OAuth bearer token still
+   authenticates. Leave `false` (the default) on a direct network.
+
+2. **gcloud** — point it at the corporate root CA (no "disable SSL" switch exists).
+   Export the macOS keychain roots (which include the corporate CA) to a PEM bundle
+   and register it:
+
+   ```sh
+   security find-certificate -a -p \
+     /System/Library/Keychains/SystemRootCertificates.keychain > ~/.config/gcloud/corp-ca.pem
+   security find-certificate -a -p \
+     /Library/Keychains/System.keychain >> ~/.config/gcloud/corp-ca.pem
+   gcloud config set core/custom_ca_certs_file ~/.config/gcloud/corp-ca.pem
+   ```
+
+   That same PEM works for other tools: `export CURL_CA_BUNDLE=~/.config/gcloud/corp-ca.pem`
+   and `export REQUESTS_CA_BUNDLE=~/.config/gcloud/corp-ca.pem`.
+
+3. **kubectl** — either use the CA bundle above (set `certificate-authority` on the
+   cluster) or skip verification per command / in kubeconfig:
+
+   ```sh
+   kubectl get pods -n airs-gw --insecure-skip-tls-verify
+   # or make it stick (must drop the CA data, which conflicts with skip-verify):
+   CTX=gke_<project>_<zone>_airs-gw-gke
+   kubectl config unset "clusters.${CTX}.certificate-authority-data"
+   kubectl config set-cluster "$CTX" --insecure-skip-tls-verify=true
+   ```
+
+4. **curl** — `curl -k https://…` for a one-off, or rely on `CURL_CA_BUNDLE` above.
+
+> Skipping verification is acceptable for a POV behind a **known, trusted**
+> corporate proxy. Preferring the CA-bundle route (gcloud/curl/requests) keeps
+> verification on; only Terraform and kubectl fall back to skip-verify here.
+
 ### Provide the console values.yaml (before stage 40)
 
 Credentials are supplied via a `values.yaml` you download from the AI Gateway

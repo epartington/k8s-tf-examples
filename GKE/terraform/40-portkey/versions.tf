@@ -31,16 +31,21 @@ provider "google" {
 # networks in stage 20-gke).
 data "google_client_config" "default" {}
 
+# When cluster_insecure_tls is true (TLS-inspecting proxy between operator and
+# cluster), skip verification and omit the cluster CA — the endpoint presents the
+# proxy's cert, not the GKE cluster CA. The bearer token still authenticates.
 provider "kubernetes" {
   host                   = "https://${data.terraform_remote_state.gke.outputs.endpoint}"
   token                  = data.google_client_config.default.access_token
-  cluster_ca_certificate = base64decode(data.terraform_remote_state.gke.outputs.ca_certificate)
+  insecure               = var.cluster_insecure_tls
+  cluster_ca_certificate = var.cluster_insecure_tls ? null : base64decode(data.terraform_remote_state.gke.outputs.ca_certificate)
 }
 
 provider "helm" {
   kubernetes {
     host                   = "https://${data.terraform_remote_state.gke.outputs.endpoint}"
     token                  = data.google_client_config.default.access_token
-    cluster_ca_certificate = base64decode(data.terraform_remote_state.gke.outputs.ca_certificate)
+    insecure               = var.cluster_insecure_tls
+    cluster_ca_certificate = var.cluster_insecure_tls ? null : base64decode(data.terraform_remote_state.gke.outputs.ca_certificate)
   }
 }
