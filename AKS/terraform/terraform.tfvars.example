@@ -1,0 +1,104 @@
+# ---------------------------------------------------------------------------
+# Shared inputs for the POV AKS + PRISMA AIRS / Portkey AI Gateway stages.
+#
+# Copy to terraform.tfvars and pass into each stage with:
+#   terraform apply -var-file=../terraform.tfvars
+# (See README.md for the full apply loop.)
+#
+# Not every stage consumes every variable; unused vars are simply ignored per
+# stage. Nothing sensitive lives here — Portkey/registry credentials are supplied
+# via the console-downloaded values.yaml (see the 40-portkey section).
+# ---------------------------------------------------------------------------
+
+# --- Core (all stages) ---
+subscription_id = "00000000-0000-0000-0000-000000000000"
+location        = "canadacentral"
+
+# --- 00-bootstrap (remote state backend) ---
+# Resource group + Storage Account for Terraform state. The storage account name
+# must be globally unique (3-24 lowercase alphanumerics). Created by 00-bootstrap
+# and passed to every other stage at init via:
+#   terraform init \
+#     -backend-config="resource_group_name=<state_resource_group>" \
+#     -backend-config="storage_account_name=<storage_account>"
+state_resource_group = "airs-gw-tfstate-rg"
+storage_account      = "airsgwtfstate00001"
+
+# --- 10-network ---
+resource_group    = "airs-gw-rg"
+vnet_cidr         = "10.10.0.0/16"
+aks_subnet_cidr   = "10.10.0.0/20"
+appgw_subnet_cidr = "10.10.16.0/24"
+
+# --- 20-aks ---
+node_count = 2
+vm_size    = "Standard_D4s_v5" # 4 vCPU / 16 GB
+# vm_size = "Standard_D4as_v5" # cheaper AMD alternative (4 vCPU / 16 GB)
+
+# CIDRs allowed to reach the public API server endpoint (kubectl/helm from your
+# operator or CI egress IP). Required so stages 40/50 can apply.
+authorized_networks = ["203.0.113.10/32"]
+
+# --- 30-iam / 40-portkey (must match across both) ---
+namespace = "airs-gw"
+ksa_name  = "gateway-sa"
+
+# --- 30-iam (Azure OpenAI model service) ---
+# Create the Azure OpenAI account + a model deployment (true), or reuse an
+# existing account by setting create_openai = false and openai_account_id.
+create_openai = true
+# openai_account_id = "/subscriptions/.../resourceGroups/.../providers/Microsoft.CognitiveServices/accounts/<name>"
+openai_account_name    = "airs-gw-openai" # globally unique; used as the custom subdomain
+openai_deployment_name = "gpt-4o-mini"
+openai_model_name      = "gpt-4o-mini"
+# openai_model_version = "2024-07-18"   # leave empty to use the model default
+openai_capacity = 10
+# openai_location = ""                  # empty = same region; set where your model is available
+
+# --- 40-portkey ---
+# Credentials come from the values.yaml downloaded from the AI Gateway console.
+# Save it as AKS/terraform/40-portkey/values.yaml (see values.yaml.example) — the
+# values_file variable defaults to that path, so no config is needed here.
+#
+# The chart is pulled from the official airs-gw Helm repo:
+#   https://portkey-ai.github.io/airs-gw-helm
+# Leave chart_version empty for the latest published chart, or pin for reproducibility.
+# chart_version = "1.2.0"
+image_repository = ""
+image_tag        = ""
+#
+# MCP: server_mode "all" runs both the gateway (8787) and the MCP server (8788)
+# in one pod, and stage 50 fronts BOTH through the same App Gateway + WAF policy.
+# Set "mcp" for MCP-only, or "" for gateway-only (MCP not exposed).
+# server_mode = "all"
+# mcp_port    = 8788
+#
+# Set true ONLY if a TLS-inspecting proxy (corporate MITM) sits between the
+# machine running Terraform and the cluster API server endpoint. It makes the
+# kubernetes/helm providers (stages 40 and 50) skip cert verification — the proxy
+# presents its own cert instead of the AKS cluster CA. The client certificate
+# still authenticates. Leave false on a direct/secure network.
+# cluster_insecure_tls = false
+
+# --- 50-ingress ---
+# WAF allowlist for callers of the gateway. Everything else gets blocked (403).
+allowed_source_ranges = ["203.0.113.0/24"]
+
+# FQDN for the TLS cert. Leave empty to derive "<appgw-public-ip>.nip.io".
+domain = ""
+
+# MCP endpoint hostname (added as a SAN on the same cert, routed to port 8788
+# through the same App Gateway + WAF). Leave empty to derive "mcp.<gateway-domain>";
+# with the nip.io fallback "mcp.<ip>.nip.io" resolves to the same IP for free.
+# Only used when the gateway runs with MCP enabled (server_mode "all"/"mcp").
+mcp_domain = ""
+
+# Key Vault name must be globally unique (3-24 chars).
+key_vault_name = "airs-gw-kv-00001"
+
+# AGIC Helm chart version. OCI installs generally require an explicit version —
+# pin one that exists (see the 50-ingress README).
+# agic_chart_version = "1.9.0"
+
+# Bring your own cert instead of self-signed: set the Key Vault secret ID.
+# tls_cert_keyvault_secret_id = "https://<kv>.vault.azure.net/secrets/<cert>/<version>"

@@ -1,9 +1,10 @@
 # POV: AKS + PRISMA AIRS / Portkey AI Gateway (Terraform)
 
-> **Status: scaffold / planned.** This mirrors the completed [GKE](../GKE/) project for
-> **Azure AKS**. The staged directory layout is in place; the Terraform for each stage is
-> not written yet. This README captures the intended architecture and the GKE→Azure
-> mapping so the stages can be filled in consistently.
+> **Status: implemented (unapplied).** This mirrors the completed [GKE](../GKE/) project for
+> **Azure AKS**. All six stages are written and `terraform validate`-clean, but have not yet
+> been applied end-to-end against a live subscription. See
+> [terraform/README.md](terraform/README.md) for the apply loop, prerequisites, and the
+> per-stage READMEs; the GKE→Azure mapping below captures the design.
 
 The goal matches GKE: a repeatable, POV-scale project that stands up an **isolated VNet**
 in an **existing** Azure subscription and deploys the **PRISMA AIRS AI Gateway** (Portkey
@@ -21,26 +22,26 @@ AKS/terraform/
   00-bootstrap/   # Resource group + Storage Account/container for TF state (azurerm backend); register providers
   10-network/     # VNet, subnet, NAT Gateway, NSG, public IP
   20-aks/         # Private AKS cluster + node pool, OIDC issuer + Workload Identity
-  30-iam/         # User-assigned managed identity + federated credential + role assignment (Azure OpenAI)
+  30-iam/         # gateway + AGIC managed identities (federated) + Azure OpenAI account + role
   40-portkey/     # namespace + helm_release of airs-gw (console values.yaml + Azure overlay)
-  50-ingress/     # WAF policy, TLS cert, ingress (Application Gateway/AGIC or Front Door)
+  50-ingress/     # WAF policy, Key Vault self-signed cert, App Gateway (WAF_v2) + AGIC + Ingress
 ```
 
 ## GKE → Azure mapping
 
-| Concern              | GKE                                   | AKS (planned)                                                        |
+| Concern              | GKE                                   | AKS                                                                  |
 |----------------------|---------------------------------------|---------------------------------------------------------------------|
 | TF state backend     | GCS bucket (`gcs`)                     | Storage Account + blob container (`azurerm`)                         |
-| Isolated network     | VPC + subnet                          | VNet + subnet                                                        |
+| Isolated network     | VPC + subnet                          | VNet + subnets (aks + appgw)                                         |
 | Egress               | Cloud NAT                             | NAT Gateway                                                          |
 | Firewall             | VPC firewall rules                    | Network Security Group (NSG)                                         |
 | Private cluster      | private nodes, authorized networks    | private AKS, API server authorized IP ranges                        |
-| Pod-level cloud auth | Workload Identity (GSA↔KSA)           | AKS Workload Identity (managed identity ↔ KSA via OIDC federation)   |
+| Pod-level cloud auth | Workload Identity (GSA↔KSA)           | Entra Workload Identity (managed identity ↔ KSA via OIDC federation) |
 | Model backend        | Vertex AI (`roles/aiplatform.user`)   | Azure OpenAI (`Cognitive Services OpenAI User` role assignment)      |
-| Gateway auth mode    | `GCP_AUTH_MODE=workload`              | Azure workload identity env (per chart Azure docs)                  |
+| Gateway auth mode    | `GCP_AUTH_MODE=workload`              | workload-identity SA annotation + pod label (API-key fallback)      |
 | Static ingress IP    | global static IP                      | Standard public IP                                                   |
-| L7 inbound + WAF     | Global external ALB + Cloud Armor     | Application Gateway + AGIC + WAF policy (or Front Door + WAF)        |
-| Managed TLS          | Google-managed cert                   | App Gateway cert / Key Vault cert / managed cert                     |
+| L7 inbound + WAF     | Global external ALB + Cloud Armor     | Application Gateway v2 + AGIC + WAF policy                           |
+| Managed TLS          | Google-managed cert                   | self-signed Key Vault cert (swap in a real cert)                     |
 
 ## Reuse from GKE
 

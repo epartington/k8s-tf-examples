@@ -1,0 +1,109 @@
+variable "subscription_id" {
+  type        = string
+  description = "Existing Azure subscription ID."
+}
+
+variable "location" {
+  type        = string
+  description = "Default region (provider only)."
+}
+
+variable "state_resource_group" {
+  type        = string
+  description = "Resource group of the state Storage Account (to read remote state)."
+  default     = "airs-gw-tfstate-rg"
+}
+
+variable "storage_account" {
+  type        = string
+  description = "Storage Account holding remote state (to read the 20-aks and 30-iam outputs)."
+}
+
+variable "container_name" {
+  type        = string
+  description = "Blob container holding remote state."
+  default     = "tfstate"
+}
+
+variable "namespace" {
+  type        = string
+  description = "Kubernetes namespace for the gateway. Must match stage 30-iam."
+  default     = "airs-gw"
+}
+
+variable "ksa_name" {
+  type        = string
+  description = "Kubernetes service account name for the gateway pod. Must match stage 30-iam's federated credential."
+  default     = "gateway-sa"
+}
+
+variable "helm_release_name" {
+  type        = string
+  description = "Helm release name. Drives the chart fullname (Service = <release>, Redis = <release>-redis)."
+  default     = "airs-gw"
+}
+
+variable "chart_repository" {
+  type        = string
+  description = "Helm repository URL for the airs-gw chart."
+  default     = "https://portkey-ai.github.io/airs-gw-helm"
+}
+
+variable "chart_name" {
+  type        = string
+  description = "Chart name within the repository."
+  default     = "airs-gw"
+}
+
+variable "chart_version" {
+  type        = string
+  description = "Chart version to install. Leave empty to pull the latest published version. Pin for reproducible applies."
+  default     = ""
+}
+
+variable "values_file" {
+  type        = string
+  description = "Path to the values.yaml downloaded from the AI Gateway console (carries the Portkey credentials). Defaults to values.yaml in this stage directory (40-portkey), so simply placing the downloaded file there works. See values.yaml.example."
+  default     = ""
+}
+
+variable "image_repository" {
+  type        = string
+  description = "Override the gateway image repository. Leave empty to use whatever the console values.yaml / chart specify."
+  default     = ""
+}
+
+variable "image_tag" {
+  type        = string
+  description = "Override the gateway image tag. Leave empty to use the version pinned by the console values.yaml / chart appVersion. Set only to hotfix a specific tag (minimum supported 2.15.0)."
+  default     = ""
+}
+
+variable "gateway_port" {
+  type        = number
+  description = "Gateway service/container port."
+  default     = 8787
+}
+
+variable "server_mode" {
+  type        = string
+  description = "Chart SERVER_MODE. 'all' runs both the gateway (gateway_port) and the MCP server (mcp_port) in one pod; 'mcp' runs only MCP; '' runs only the gateway. The POV uses 'all' so both are fronted by the stage-50 Application Gateway."
+  default     = "all"
+
+  validation {
+    condition     = contains(["all", "mcp", ""], var.server_mode)
+    error_message = "server_mode must be one of: \"all\", \"mcp\", or \"\" (gateway only)."
+  }
+}
+
+variable "mcp_port" {
+  type        = number
+  description = "MCP service/container port (chart MCP_PORT). Exposed on the same Service as the gateway when server_mode is 'all' or 'mcp'."
+  default     = 8788
+}
+
+variable "cluster_insecure_tls" {
+  type        = bool
+  description = "Skip TLS verification of the cluster API server endpoint for the kubernetes/helm providers. Set true ONLY when a TLS-inspecting proxy (corporate MITM) sits between the operator and the cluster, so the endpoint presents the proxy's cert instead of the AKS cluster CA. The client certificate still authenticates the request. Leave false for a normal secure connection."
+  default     = false
+}

@@ -27,6 +27,8 @@ terraform.rc
 # AI Gateway console download — carries credentials, never commit.
 # (Scoped to stage 40 so the vendored chart's own values.yaml stays tracked.)
 GKE/terraform/40-portkey/values.yaml
+AKS/terraform/40-portkey/values.yaml
+EKS/terraform/40-portkey/values.yaml
 
 # macOS
 .DS_Store
