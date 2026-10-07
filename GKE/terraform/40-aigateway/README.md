@@ -35,8 +35,9 @@ Stage 40 can't `plan`/`apply` (or `validate`) without it — the config uses `fi
 ## Inputs used (from `../terraform.tfvars`)
 
 `project_id`, `region`, `state_bucket`, `namespace`, `ksa_name`, `server_mode`,
-`mcp_port`, `gateway_port`, optional `chart_version` / `image_repository` /
-`image_tag`, and **`cluster_insecure_tls`** (see Notes).
+`mcp_port`, `gateway_port`, `chart_version` (pinned to `1.2.0` by default),
+optional `image_repository` / `image_tag` / `image_overrides`, and
+**`cluster_insecure_tls`** (see Notes).
 
 ## Run
 
@@ -68,5 +69,11 @@ Ingress + BackendConfig to the Service.
   network. Applies identically in stage 50. Full symptoms + per-tool fixes
   (gcloud/kubectl/curl too) are in
   [Behind a TLS-inspecting proxy (corporate MITM)](../README.md#behind-a-tls-inspecting-proxy-corporate-mitm).
+- **Chart version** is pinned to `1.2.0` (`chart_version` default) for reproducible
+  applies; set `chart_version = ""` to pull the latest published chart.
 - Image repo/tag come from the console `values.yaml` (or the chart `appVersion`)
-  unless you override `image_repository`/`image_tag`.
+  unless you override them. `image_repository`/`image_tag` cover the gateway image;
+  **`image_overrides`** (a map keyed by chart image name — `gatewayImage`,
+  `dataserviceImage`, `redisImage`, `minioImage`, `minioClientImage`, `etcdImage`,
+  `milvusImage`) pins any chart image on top of the pinned chart version, e.g.
+  `image_overrides = { gatewayImage = { tag = "2.22.0" } }`.

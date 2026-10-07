@@ -53,15 +53,24 @@ ksa_name  = "gateway-sa"
 #
 # The chart is pulled from the official airs-gw Helm repo:
 #   https://portkey-ai.github.io/airs-gw-helm
-# Leave chart_version empty for the latest published chart, or pin for reproducibility.
+# chart_version is PINNED to 1.2.0 by default (in variables.tf) for reproducible
+# applies. Override here to use a different chart, or set "" to pull the latest.
 # chart_version = "1.2.0"
 #
-# Image repo/tag come from the console values.yaml / chart. Override only to swap
-# registries or hotfix a tag:
+# Gateway image: image_repository/image_tag override the gateway image only.
 # image_repository = "docker.io/portkeyai/gateway_enterprise"
 # image_tag        = "2.21.0"
 image_repository = ""
 image_tag        = ""
+#
+# image_overrides pins ANY image shipped by the chart on top of the pinned chart
+# version — use it to run a newer image without bumping the chart. Keys:
+# gatewayImage, dataserviceImage, redisImage, minioImage, minioClientImage,
+# etcdImage, milvusImage. Wins over image_repository/image_tag for gatewayImage.
+# image_overrides = {
+#   gatewayImage     = { tag = "2.22.0" }
+#   dataserviceImage = { repository = "registry.portkey.ai/airsgw/data-service", tag = "1.10.0" }
+# }
 #
 # MCP: server_mode "all" runs both the gateway (8787) and the MCP server (8788)
 # in one pod, and stage 50 fronts BOTH through the same HTTPS LB + Cloud Armor.

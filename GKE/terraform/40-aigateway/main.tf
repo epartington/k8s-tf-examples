@@ -70,10 +70,15 @@ locals {
       }
     }
 
-    # Optional image override (empty map merges harmlessly over the base values).
-    images = {
-      gatewayImage = local.gateway_image
-    }
+    # Image overrides merged onto the chart's images block. gatewayImage honours
+    # the image_repository/image_tag convenience vars; image_overrides can set any
+    # chart image (gatewayImage, dataserviceImage, redisImage, ...) and wins on
+    # intersection, so a newer image can run on top of the pinned chart version.
+    # Empty maps merge harmlessly over the chart defaults.
+    images = merge(
+      { gatewayImage = local.gateway_image },
+      var.image_overrides,
+    )
 
     # Ingress is managed in stage 50-ingress, not by the chart.
     ingress = { enabled = false }

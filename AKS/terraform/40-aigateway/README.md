@@ -37,9 +37,9 @@ Stage 40 can't `plan`/`apply` (or `validate`) without it — the config uses `fi
 ## Inputs used (from `../terraform.tfvars`)
 
 `subscription_id`, `state_resource_group`, `storage_account`, `namespace`,
-`ksa_name`, `server_mode`, `mcp_port`, `gateway_port`, optional
-`chart_version` / `image_repository` / `image_tag`, and **`cluster_insecure_tls`**
-(see Notes).
+`ksa_name`, `server_mode`, `mcp_port`, `gateway_port`, `chart_version` (pinned to
+`1.2.0` by default), optional `image_repository` / `image_tag` / `image_overrides`,
+and **`cluster_insecure_tls`** (see Notes).
 
 ## Run
 
@@ -82,8 +82,14 @@ surface here as a pod-start failure.
   confirm the chart renders `podLabels` onto the deployment. If it doesn't, the
   Workload Identity webhook won't inject the token — patch the label onto the
   deployment as a fallback.
+- **Chart version** is pinned to `1.2.0` (`chart_version` default) for reproducible
+  applies; set `chart_version = ""` to pull the latest published chart.
 - Image repo/tag come from the console `values.yaml` (or the chart `appVersion`)
-  unless you override `image_repository`/`image_tag`.
+  unless you override them. `image_repository`/`image_tag` cover the gateway image;
+  **`image_overrides`** (a map keyed by chart image name — `gatewayImage`,
+  `dataserviceImage`, `redisImage`, `minioImage`, `minioClientImage`, `etcdImage`,
+  `milvusImage`) pins any chart image on top of the pinned chart version, e.g.
+  `image_overrides = { gatewayImage = { tag = "2.22.0" } }`.
 - **Secrets in output.** The `helm_release` values are wrapped in `sensitive()`
   (parity with GKE) so the console `values.yaml` credentials aren't echoed into
   `plan`/`apply` output or CI logs.

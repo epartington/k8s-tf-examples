@@ -45,8 +45,14 @@ variable "chart_name" {
 
 variable "chart_version" {
   type        = string
-  description = "Chart version to install. Leave empty to pull the latest published version. Pin for reproducible applies."
-  default     = ""
+  description = "airs-gw chart version to install. Pinned to a known-good version for reproducible applies; set to \"\" to pull the latest published chart."
+  default     = "1.2.0"
+}
+
+variable "image_overrides" {
+  type        = map(map(string))
+  description = "Per-image overrides merged onto the chart's images block, e.g. { gatewayImage = { tag = \"2.22.0\" } } or { dataserviceImage = { repository = \"...\", tag = \"1.10.0\" } }. Lets you run newer images on top of the pinned chart_version without changing the chart. Keys: gatewayImage, dataserviceImage, redisImage, minioImage, minioClientImage, etcdImage, milvusImage. Wins over image_repository/image_tag for the same image."
+  default     = {}
 }
 
 variable "values_file" {
