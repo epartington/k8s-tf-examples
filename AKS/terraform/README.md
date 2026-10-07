@@ -3,7 +3,7 @@
 A repeatable, POV-scale Terraform project that stands up an **isolated VNet** in an
 **existing** Azure subscription and deploys the **PRISMA AIRS AI Gateway** (Portkey hybrid
 data-plane) on a small **2-node private AKS cluster**, so the gateway can proxy requests to
-**Azure OpenAI** models via **Entra Workload Identity** (federated identity, no static keys).
+**Azure AI Foundry** models via **Entra Workload Identity** (federated identity, no static keys).
 
 Inbound traffic reaches the gateway through a **public HTTPS Application Gateway** (WAF_v2)
 locked down by a **WAF policy** (IP allowlist, default-deny).
@@ -22,8 +22,9 @@ pattern. See [../README.md](../README.md) for the GKE→Azure mapping table.
   server endpoint restricted to `authorized_networks`).
 - **NAT Gateway** for egress (image pulls + reaching `api.portkey.ai` / `albus.portkey.ai`).
 - **Entra Workload Identity**: a user-assigned managed identity with the
-  `Cognitive Services OpenAI User` role, federated to the gateway KSA via the cluster OIDC
-  issuer — no static keys in the pod.
+  `Cognitive Services User` (+ `Cognitive Services OpenAI User`) role on the Azure AI
+  Foundry account, federated to the gateway KSA via the cluster OIDC issuer — no static
+  keys in the pod.
 - **Hybrid deployment**: the data-plane runs in-cluster and syncs to the Portkey SaaS
   control plane, so it needs a Portkey license (`PORTKEY_CLIENT_AUTH`), an org ID
   (`ORGANISATIONS_TO_SYNC`), and registry credentials — all supplied via the
@@ -41,7 +42,7 @@ AKS/terraform/
   00-bootstrap/   # state RG + Storage Account/container (LOCAL state) + register providers
   10-network/     # VNet, subnets (aks + appgw), NAT Gateway + egress IP, NSG, App Gateway IP
   20-aks/         # private-node AKS + node pool, OIDC issuer + Workload Identity
-  30-iam/         # gateway UAMI + AGIC UAMI (federated to KSAs) + Azure OpenAI + role
+  30-iam/         # gateway UAMI + AGIC UAMI (federated to KSAs) + Azure AI Foundry + role
   40-aigateway/     # namespace + helm_release of airs-gw (console values.yaml + Azure overlay)
   50-ingress/     # WAF policy, Key Vault self-signed cert, App Gateway (WAF_v2), AGIC, Ingress
 ```
@@ -241,16 +242,17 @@ do **not** hand-set those in the file.
    curl -s localhost:9000/v1/health
    ```
 
-4. In the Portkey control plane, add an Azure OpenAI provider (Workload Identity if the
-   gateway build supports it, else the API key — see Notes). Then from an **allowlisted**
-   source:
+4. In the Portkey control plane, add an **Azure AI Foundry** (`azure-ai`) provider
+   pointed at the Foundry endpoint (output `foundry_endpoint`), using managed-identity
+   auth if the gateway build supports it, else the API key — see Notes. Then from an
+   **allowlisted** source:
 
    ```sh
    curl -k https://<domain>/v1/chat/completions \
      -H "x-portkey-api-key: <key>" \
-     -H "x-portkey-provider: @azure-openai" \
+     -H "x-portkey-provider: @azure-ai" \
      -H "content-type: application/json" \
-     -d '{"model":"@azure-openai/gpt-4o-mini","messages":[{"role":"user","content":"hi"}]}'
+     -d '{"model":"@azure-ai/gpt-4o-mini","messages":[{"role":"user","content":"hi"}]}'
    ```
 
    Confirm a 200 and that the request appears in Portkey Logs. A request from a
@@ -270,12 +272,18 @@ do **not** hand-set those in the file.
 
 ## Notes & caveats
 
-- **Azure OpenAI auth mode (open item).** The chart documents Vertex (`GCP_AUTH_MODE`) and
-  Bedrock auth, not Azure OpenAI. The primary path here is Entra Workload Identity (the
-  overlay sets the SA annotation + pod label). If the gateway build can't mint an Entra
-  token for Azure OpenAI, fall back to providing the model **API key** via the console
-  `values.yaml` and configuring the Azure OpenAI provider in the Portkey console with that
-  key. Confirm the working path once the gateway is running.
+- **Azure AI Foundry & model catalog.** The model service is an **AIServices** account
+  (`kind = "AIServices"`) — the Azure AI Foundry inference resource serving the full
+  catalog (OpenAI + Llama, Mistral, Phi, DeepSeek, …) through one endpoint + one Entra
+  role, the Azure analog of Vertex Model Garden / Bedrock foundation models. Deploy
+  non-OpenAI models by setting `foundry_model_format` (`Meta`, `Mistral AI`, …) and
+  `foundry_model_name`.
+- **Foundry auth mode (open item).** The chart documents Vertex (`GCP_AUTH_MODE`) and
+  Bedrock auth, not Azure. The primary path here is Entra Workload Identity (the overlay
+  sets the SA annotation + pod label; the identity holds `Cognitive Services User`). If the
+  gateway build can't mint an Entra token for Foundry, fall back to providing an **API key**
+  via the console `values.yaml` and configuring the `azure-ai` provider in the Portkey
+  console with that key. Confirm the working path once the gateway is running.
 - **Self-signed TLS.** The POV generates a self-signed cert into Key Vault, so browsers and
   clients warn — use `curl -k` and expect a browser warning. Set
   `tls_cert_keyvault_secret_id` to a real cert to remove the warnings; Azure App Gateway
@@ -300,9 +308,9 @@ do **not** hand-set those in the file.
   path, matching GKE — a dedicated host with a `/*` rule forwards every path to port 8788.
   The MCP host is added as a SAN on the same cert. Set `server_mode = ""` to run
   gateway-only and skip MCP exposure entirely.
-- **Region.** Pick a `location` where Azure OpenAI and your chosen model are available; the
-  `create_openai` deployment's model/SKU must exist in that region (`openai_location`
-  overrides the region for the OpenAI account only).
+- **Region.** Pick a `location` where Azure AI Foundry and your chosen model are available;
+  the `create_foundry` deployment's model/SKU must exist in that region (`foundry_location`
+  overrides the region for the Foundry account only).
 
 ## Teardown
 

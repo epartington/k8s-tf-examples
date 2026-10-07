@@ -72,12 +72,14 @@ surface here as a pod-start failure.
   direct network. Applies identically in stage 50. Full symptoms + per-tool fixes
   are in
   [Behind a TLS-inspecting proxy (corporate MITM)](../README.md#behind-a-tls-inspecting-proxy-corporate-mitm).
-- **Model auth (open item).** The overlay wires Entra Workload Identity (SA
-  annotation + pod label). The chart documents Vertex (`GCP_AUTH_MODE`) and Bedrock
-  auth but not an Azure OpenAI auth mode. If the gateway build can't mint an Entra
-  token for Azure OpenAI, provide the model **API key** via the console `values.yaml`
-  (see `values.yaml.example`) and configure the Azure OpenAI provider in the Portkey
-  console with that key. Confirm the working path when the gateway is running.
+- **Model auth (open item).** The model service is an **Azure AI Foundry** (AIServices)
+  account from stage 30; the overlay wires Entra Workload Identity (SA annotation + pod
+  label) and the identity holds `Cognitive Services User`. The chart documents Vertex
+  (`GCP_AUTH_MODE`) and Bedrock auth but not an Azure auth mode. If the gateway build
+  can't mint an Entra token for Foundry, provide an **API key** via the console
+  `values.yaml` (see `values.yaml.example`) and configure the `azure-ai` (Azure AI
+  Foundry) provider in the Portkey console with that key. Confirm the working path when
+  the gateway is running.
 - **Pod-label key.** The overlay sets `podLabels."azure.workload.identity/use"`;
   confirm the chart renders `podLabels` onto the deployment. If it doesn't, the
   Workload Identity webhook won't inject the token — patch the label onto the

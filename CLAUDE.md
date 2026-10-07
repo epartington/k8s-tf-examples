@@ -13,7 +13,7 @@ by a **WAF-protected HTTPS load balancer**.
 ```text
 k8s-tf-examples/
   GKE/   # Google Kubernetes Engine → Vertex AI        (✅ implemented, reference)
-  AKS/   # Azure Kubernetes Service → Azure OpenAI      (✅ implemented)
+  AKS/   # Azure Kubernetes Service → Azure AI Foundry  (✅ implemented)
   EKS/   # Amazon EKS → Amazon Bedrock                  (✅ implemented)
 ```
 

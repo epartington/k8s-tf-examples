@@ -43,17 +43,17 @@ output "agic_ksa_name" {
   value       = var.agic_ksa_name
 }
 
-output "openai_account_id" {
-  description = "Resource ID of the Azure OpenAI account the gateway can call (created or supplied)."
-  value       = local.openai_account_id
+output "foundry_account_id" {
+  description = "Resource ID of the Azure AI Foundry (AIServices) account the gateway can call (created or supplied)."
+  value       = local.foundry_account_id
 }
 
-output "openai_endpoint" {
-  description = "Endpoint of the created Azure OpenAI account (empty when create_openai = false)."
-  value       = var.create_openai ? azurerm_cognitive_account.openai[0].endpoint : ""
+output "foundry_endpoint" {
+  description = "Foundry endpoint for the Portkey azure-ai provider — the created account's endpoint, or foundry_endpoint when reusing an existing account."
+  value       = var.create_foundry ? azurerm_cognitive_account.foundry[0].endpoint : var.foundry_endpoint
 }
 
-output "openai_deployment_name" {
-  description = "Name of the created model deployment (empty when create_openai = false)."
-  value       = var.create_openai ? azurerm_cognitive_deployment.model[0].name : ""
+output "foundry_deployment_name" {
+  description = "Model deployment name — the created deployment, or foundry_deployment_name when reusing an existing account."
+  value       = var.create_foundry ? azurerm_cognitive_deployment.model[0].name : var.foundry_deployment_name
 }

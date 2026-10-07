@@ -24,8 +24,9 @@ locals {
   location    = data.terraform_remote_state.network.outputs.location
   oidc_issuer = data.terraform_remote_state.aks.outputs.oidc_issuer_url
 
-  # OpenAI account to grant access to: the one we create, or a supplied existing one.
-  openai_account_id = var.create_openai ? azurerm_cognitive_account.openai[0].id : var.openai_account_id
+  # Foundry (AI Services) account to grant access to: the one we create, or a
+  # supplied existing one.
+  foundry_account_id = var.create_foundry ? azurerm_cognitive_account.foundry[0].id : var.foundry_account_id
 }
 
 # --- Gateway pod identity (Workload Identity) ---
@@ -46,43 +47,52 @@ resource "azurerm_federated_identity_credential" "gateway" {
   subject             = "system:serviceaccount:${var.namespace}:${var.ksa_name}"
 }
 
-# --- Azure OpenAI (model service), gated by create_openai ---
+# --- Azure AI Foundry (model service), gated by create_foundry ---
+#
+# kind = "AIServices" is the Azure AI Foundry inference resource: a single endpoint
+# serving the full model catalog (OpenAI + Llama, Mistral, Phi, DeepSeek, ...), the
+# Azure analog of Vertex Model Garden / Bedrock foundation models.
 
-resource "azurerm_cognitive_account" "openai" {
-  count = var.create_openai ? 1 : 0
+resource "azurerm_cognitive_account" "foundry" {
+  count = var.create_foundry ? 1 : 0
 
-  name                  = var.openai_account_name
-  location              = var.openai_location != "" ? var.openai_location : local.location
+  name                  = var.foundry_account_name
+  location              = var.foundry_location != "" ? var.foundry_location : local.location
   resource_group_name   = local.rg
-  kind                  = "OpenAI"
+  kind                  = "AIServices"
   sku_name              = "S0"
-  custom_subdomain_name = var.openai_account_name
+  custom_subdomain_name = var.foundry_account_name
 }
 
+# One model deployment from the catalog. format "OpenAI" for GPT models, or
+# "Meta" / "Mistral AI" / "DeepSeek" / ... for other catalog families.
 resource "azurerm_cognitive_deployment" "model" {
-  count = var.create_openai ? 1 : 0
+  count = var.create_foundry ? 1 : 0
 
-  name                 = var.openai_deployment_name
-  cognitive_account_id = azurerm_cognitive_account.openai[0].id
+  name                 = var.foundry_deployment_name
+  cognitive_account_id = azurerm_cognitive_account.foundry[0].id
 
   model {
-    format  = "OpenAI"
-    name    = var.openai_model_name
-    version = var.openai_model_version != "" ? var.openai_model_version : null
+    format  = var.foundry_model_format
+    name    = var.foundry_model_name
+    version = var.foundry_model_version != "" ? var.foundry_model_version : null
   }
 
   sku {
     name     = "Standard"
-    capacity = var.openai_capacity
+    capacity = var.foundry_capacity
   }
 }
 
-# Let the gateway identity call the model service (mirrors roles/aiplatform.user).
-resource "azurerm_role_assignment" "openai_user" {
-  count = local.openai_account_id != "" ? 1 : 0
+# Let the gateway identity call the model service keyless via Entra (mirrors
+# roles/aiplatform.user / bedrock:InvokeModel). "Cognitive Services User" covers
+# the Foundry inference (/models) endpoint; "Cognitive Services OpenAI User" covers
+# OpenAI-format calls. Both are granted by default so either Portkey provider works.
+resource "azurerm_role_assignment" "model_access" {
+  for_each = local.foundry_account_id != "" ? toset(var.model_access_roles) : toset([])
 
-  scope                = local.openai_account_id
-  role_definition_name = "Cognitive Services OpenAI User"
+  scope                = local.foundry_account_id
+  role_definition_name = each.value
   principal_id         = azurerm_user_assigned_identity.gateway.principal_id
 }
 

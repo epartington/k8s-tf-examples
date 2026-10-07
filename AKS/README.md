@@ -9,7 +9,7 @@
 The goal matches GKE: a repeatable, POV-scale project that stands up an **isolated VNet**
 in an **existing** Azure subscription and deploys the **PRISMA AIRS AI Gateway** (Portkey
 hybrid data-plane) on a small **private AKS cluster**, so the gateway can proxy requests to
-**Azure OpenAI** models via **Workload Identity** (AAD federation, no static keys).
+**Azure AI Foundry** models via **Workload Identity** (AAD federation, no static keys).
 
 Inbound traffic reaches the gateway through a **public HTTPS load balancer** locked down by
 a **WAF** (IP allowlist). Same MCP story as GKE: the gateway (8787) and MCP server (8788)
@@ -22,7 +22,7 @@ AKS/terraform/
   00-bootstrap/   # Resource group + Storage Account/container for TF state (azurerm backend); register providers
   10-network/     # VNet, subnet, NAT Gateway, NSG, public IP
   20-aks/         # Private AKS cluster + node pool, OIDC issuer + Workload Identity
-  30-iam/         # gateway + AGIC managed identities (federated) + Azure OpenAI account + role
+  30-iam/         # gateway + AGIC managed identities (federated) + Azure AI Foundry account + role
   40-aigateway/     # namespace + helm_release of airs-gw (console values.yaml + Azure overlay)
   50-ingress/     # WAF policy, Key Vault self-signed cert, App Gateway (WAF_v2) + AGIC + Ingress
 ```
@@ -37,7 +37,7 @@ AKS/terraform/
 | Firewall             | VPC firewall rules                    | Network Security Group (NSG)                                         |
 | Private cluster      | private nodes, authorized networks    | private AKS, API server authorized IP ranges                        |
 | Pod-level cloud auth | Workload Identity (GSA↔KSA)           | Entra Workload Identity (managed identity ↔ KSA via OIDC federation) |
-| Model backend        | Vertex AI (`roles/aiplatform.user`)   | Azure OpenAI (`Cognitive Services OpenAI User` role assignment)      |
+| Model backend        | Vertex AI (`roles/aiplatform.user`)   | Azure AI Foundry — AIServices account (`Cognitive Services User` role) |
 | Gateway auth mode    | `GCP_AUTH_MODE=workload`              | workload-identity SA annotation + pod label (API-key fallback)      |
 | Static ingress IP    | global static IP                      | Standard public IP                                                   |
 | L7 inbound + WAF     | Global external ALB + Cloud Armor     | Application Gateway v2 + AGIC + WAF policy                           |

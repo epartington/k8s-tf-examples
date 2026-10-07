@@ -39,11 +39,11 @@ environment:
     ORGANISATIONS_TO_SYNC: "<from-console>"
     # LOG_STORE / ANALYTICS_STORE etc. reflect your console configuration.
     #
-    # Azure OpenAI auth fallback (see the 40-aigateway README "Model auth" note):
-    # if the gateway build cannot mint an Entra token for Azure OpenAI via
-    # Workload Identity, provide the model API key here instead and configure the
-    # Azure OpenAI provider in the Portkey console with that key.
-    # AZURE_OPENAI_API_KEY: "<from-key-vault-or-console>"
+    # Azure AI Foundry auth fallback (see the 40-aigateway README "Model auth" note):
+    # if the gateway build cannot mint an Entra token for Foundry via Workload
+    # Identity, provide the Foundry API key here instead and configure the
+    # azure-ai (Azure AI Foundry) provider in the Portkey console with that key.
+    # AZURE_AI_API_KEY: "<from-foundry-or-console>"
 
 # Bundled Redis stays on for the POV; data service / MinIO / Milvus off.
 # (These usually come preset in the console download; shown here for reference.)

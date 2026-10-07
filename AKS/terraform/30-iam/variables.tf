@@ -63,52 +63,70 @@ variable "agic_ksa_name" {
   default     = "ingress-azure"
 }
 
-# --- Azure OpenAI (model service) ---
+# --- Azure AI Foundry (model service) ---
 
-variable "create_openai" {
+variable "create_foundry" {
   type        = bool
-  description = "Create the Azure OpenAI (Cognitive Services) account + a model deployment. Set false to reuse an existing account via openai_account_id."
+  description = "Create the Azure AI Foundry (AIServices) account + a model deployment. Set false to reuse an existing account via foundry_account_id."
   default     = true
 }
 
-variable "openai_account_id" {
+variable "foundry_account_id" {
   type        = string
-  description = "Resource ID of an existing Azure OpenAI account to grant the gateway access to (used only when create_openai = false)."
+  description = "Resource ID of an existing Azure AI Foundry (AIServices) account to grant the gateway access to (used only when create_foundry = false). Use the account ID (.../Microsoft.CognitiveServices/accounts/<name>); projects under it inherit account-level data-plane access."
   default     = ""
 }
 
-variable "openai_account_name" {
+variable "foundry_endpoint" {
   type        = string
-  description = "Name of the Azure OpenAI account to create (must be globally unique; used as the custom subdomain). Used only when create_openai = true."
-  default     = "airs-gw-openai"
-}
-
-variable "openai_location" {
-  type        = string
-  description = "Region for the Azure OpenAI account. Leave empty to use the 10-network region. Must be a region where your model is available."
+  description = "Endpoint of the existing Foundry account, surfaced via the foundry_endpoint output for the Portkey azure-ai provider. Used only when create_foundry = false; ignored otherwise (the created account's endpoint is used)."
   default     = ""
 }
 
-variable "openai_deployment_name" {
+variable "foundry_account_name" {
+  type        = string
+  description = "Name of the Azure AI Foundry (AIServices) account to create (must be globally unique; used as the custom subdomain). Used only when create_foundry = true."
+  default     = "airs-gw-foundry"
+}
+
+variable "foundry_location" {
+  type        = string
+  description = "Region for the Foundry account. Leave empty to use the 10-network region. Must be a region where your model is available."
+  default     = ""
+}
+
+variable "foundry_deployment_name" {
   type        = string
   description = "Name of the model deployment to create."
   default     = "gpt-4o-mini"
 }
 
-variable "openai_model_name" {
+variable "foundry_model_format" {
   type        = string
-  description = "Model to deploy."
+  description = "Publisher format of the deployed model: \"OpenAI\" for GPT models, or \"Meta\" / \"Mistral AI\" / \"DeepSeek\" / \"Microsoft\" / ... for other Foundry catalog families."
+  default     = "OpenAI"
+}
+
+variable "foundry_model_name" {
+  type        = string
+  description = "Model to deploy from the Foundry catalog (e.g. gpt-4o-mini, Meta-Llama-3.1-8B-Instruct)."
   default     = "gpt-4o-mini"
 }
 
-variable "openai_model_version" {
+variable "foundry_model_version" {
   type        = string
   description = "Model version to deploy. Leave empty to let Azure pick the default for the model."
   default     = ""
 }
 
-variable "openai_capacity" {
+variable "foundry_capacity" {
   type        = number
   description = "Deployment capacity (thousands of tokens per minute, TPM units)."
   default     = 10
+}
+
+variable "model_access_roles" {
+  type        = list(string)
+  description = "Data-plane roles granted to the gateway identity on the Foundry account. \"Cognitive Services User\" covers the Foundry inference (/models) endpoint; \"Cognitive Services OpenAI User\" covers OpenAI-format calls."
+  default     = ["Cognitive Services User", "Cognitive Services OpenAI User"]
 }

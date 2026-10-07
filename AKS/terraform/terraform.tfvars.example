@@ -43,17 +43,26 @@ authorized_networks = ["203.0.113.10/32"]
 namespace = "airs-gw"
 ksa_name  = "gateway-sa"
 
-# --- 30-iam (Azure OpenAI model service) ---
-# Create the Azure OpenAI account + a model deployment (true), or reuse an
-# existing account by setting create_openai = false and openai_account_id.
-create_openai = true
-# openai_account_id = "/subscriptions/.../resourceGroups/.../providers/Microsoft.CognitiveServices/accounts/<name>"
-openai_account_name    = "airs-gw-openai" # globally unique; used as the custom subdomain
-openai_deployment_name = "gpt-4o-mini"
-openai_model_name      = "gpt-4o-mini"
-# openai_model_version = "2024-07-18"   # leave empty to use the model default
-openai_capacity = 10
-# openai_location = ""                  # empty = same region; set where your model is available
+# --- 30-iam (Azure AI Foundry model service) ---
+# Create the Azure AI Foundry (AIServices) account + a model deployment (true), or
+# reuse an existing account by setting create_foundry = false and foundry_account_id.
+# AIServices is a single endpoint serving the full Foundry model catalog (OpenAI +
+# Llama, Mistral, Phi, DeepSeek, ...) — the Azure analog of Vertex/Bedrock.
+create_foundry = true
+# To reuse an EXISTING Foundry (AIServices) account instead, set create_foundry = false
+# and point at it (see 30-iam README "Using an existing / separate Foundry"):
+# foundry_account_id = "/subscriptions/.../resourceGroups/.../providers/Microsoft.CognitiveServices/accounts/<name>"
+# foundry_endpoint   = "https://<name>.services.ai.azure.com/"   # surfaced via the foundry_endpoint output
+foundry_account_name    = "airs-gw-foundry" # globally unique; used as the custom subdomain
+foundry_deployment_name = "gpt-4o-mini"
+foundry_model_format    = "OpenAI" # or "Meta" / "Mistral AI" / "DeepSeek" / ... for catalog models
+foundry_model_name      = "gpt-4o-mini"
+# foundry_model_version = "2024-07-18"   # leave empty to use the model default
+foundry_capacity = 10
+# foundry_location = ""                  # empty = same region; set where your model is available
+#
+# Data-plane roles granted to the gateway identity (keyless Entra access):
+# model_access_roles = ["Cognitive Services User", "Cognitive Services OpenAI User"]
 
 # --- 40-aigateway ---
 # Credentials come from the values.yaml downloaded from the AI Gateway console.
