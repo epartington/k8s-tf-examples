@@ -44,6 +44,10 @@ locals {
 
   # Domains on the managed cert: add the MCP SAN only when MCP is enabled.
   cert_domains = local.mcp_enabled ? [local.domain, local.mcp_domain] : [local.domain]
+
+  # Cloud Armor allows at most 10 CIDRs per rule's src_ip_ranges, so split the
+  # allowlist into chunks of 10 and emit one allow rule per chunk.
+  allowed_source_range_chunks = chunklist(var.allowed_source_ranges, 10)
 }
 
 # Cloud Armor: allow only the POV source ranges, deny everything else.
@@ -52,17 +56,17 @@ resource "google_compute_security_policy" "armor" {
   project = var.project_id
 
   dynamic "rule" {
-    for_each = length(var.allowed_source_ranges) > 0 ? [1] : []
+    for_each = local.allowed_source_range_chunks
     content {
       action   = "allow"
-      priority = 1000
+      priority = 1000 + rule.key
       match {
         versioned_expr = "SRC_IPS_V1"
         config {
-          src_ip_ranges = var.allowed_source_ranges
+          src_ip_ranges = rule.value
         }
       }
-      description = "Allow POV source ranges"
+      description = "Allow POV source ranges (chunk ${rule.key})"
     }
   }
 

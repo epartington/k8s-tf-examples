@@ -99,8 +99,10 @@ resource "helm_release" "airs_gw" {
 
   # Base = console values.yaml (credentials); overlay = GCP-specific settings.
   # Later entries win, so the overlay overrides the base where they intersect.
-  values = [
+  # sensitive() keeps the console values.yaml (registry/Portkey creds) out of
+  # plan/apply output — helm_release.values is not sensitive by default.
+  values = sensitive([
     file(local.values_file),
     yamlencode(local.gcp_overlay),
-  ]
+  ])
 }
