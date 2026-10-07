@@ -24,3 +24,8 @@ output "workload_pool" {
   description = "Workload Identity pool (<project>.svc.id.goog)."
   value       = google_container_cluster.gke.workload_identity_config[0].workload_pool
 }
+
+output "node_service_account_email" {
+  description = "Email of the dedicated least-privilege node pool service account."
+  value       = google_service_account.node.email
+}

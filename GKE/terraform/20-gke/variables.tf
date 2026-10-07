@@ -25,6 +25,12 @@ variable "cluster_name" {
   default     = "airs-gw-gke"
 }
 
+variable "node_sa_name" {
+  type        = string
+  description = "Account ID for the dedicated GKE node pool service account (replaces the default Compute Engine SA on the nodes)."
+  default     = "airs-gw-node"
+}
+
 variable "node_count" {
   type        = number
   description = "Number of nodes in the node pool (total, for the zonal POV cluster)."
