@@ -10,6 +10,15 @@ data "terraform_remote_state" "network" {
 
 locals {
   net = data.terraform_remote_state.network.outputs
+
+  # Nodes egress via the NAT Gateway, so its public IP must be in the API server
+  # authorized ranges or node bootstrap can't reach the public control plane
+  # (CSE exit 51). With outbound_type = userAssignedNATGateway, AKS does not add
+  # it automatically, so we append it to the operator-supplied ranges.
+  authorized_ip_ranges = distinct(concat(
+    var.authorized_networks,
+    ["${local.net.nat_public_ip_address}/32"],
+  ))
 }
 
 # Private-node AKS cluster: public API server locked by authorized IP ranges,
@@ -53,6 +62,6 @@ resource "azurerm_kubernetes_cluster" "aks" {
   # Public API server endpoint restricted to the operator/CI egress CIDRs so
   # stages 40/50 (kubernetes/helm providers) and kubectl can connect.
   api_server_access_profile {
-    authorized_ip_ranges = var.authorized_networks
+    authorized_ip_ranges = local.authorized_ip_ranges
   }
 }

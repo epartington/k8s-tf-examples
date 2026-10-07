@@ -28,6 +28,11 @@ output "aks_subnet_id" {
   value       = azurerm_subnet.aks.id
 }
 
+output "nat_public_ip_address" {
+  description = "NAT Gateway egress IP. Stage 20 adds this to the API server authorized ranges so nodes (which egress via NAT) can reach the public control plane."
+  value       = azurerm_public_ip.nat.ip_address
+}
+
 output "appgw_subnet_id" {
   description = "ID of the Application Gateway subnet (stage 50)."
   value       = azurerm_subnet.appgw.id
