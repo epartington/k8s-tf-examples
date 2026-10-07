@@ -1,9 +1,10 @@
 # POV: EKS + PRISMA AIRS / Portkey AI Gateway (Terraform)
 
-> **Status: scaffold / planned.** This mirrors the completed [GKE](../GKE/) project for
-> **AWS EKS**. The staged directory layout is in place; the Terraform for each stage is not
-> written yet. This README captures the intended architecture and the GKE→AWS mapping so
-> the stages can be filled in consistently.
+> **Status: implemented (unapplied).** This mirrors the completed [GKE](../GKE/) project for
+> **AWS EKS**. All six stages are written and `terraform validate`-clean, but have not yet
+> been applied end-to-end against a live account. See
+> [terraform/README.md](terraform/README.md) for the apply loop, prerequisites, and the
+> per-stage READMEs; the GKE→AWS mapping below captures the design.
 
 The goal matches GKE: a repeatable, POV-scale project that stands up an **isolated VPC** in
 an **existing** AWS account and deploys the **PRISMA AIRS AI Gateway** (Portkey hybrid
@@ -28,7 +29,7 @@ EKS/terraform/
 
 ## GKE → AWS mapping
 
-| Concern              | GKE                                   | EKS (planned)                                                       |
+| Concern              | GKE                                   | EKS                                                                |
 |----------------------|---------------------------------------|--------------------------------------------------------------------|
 | TF state backend     | GCS bucket (`gcs`)                    | S3 bucket + DynamoDB lock table (`s3`)                              |
 | Isolated network     | VPC + subnet                          | VPC + public/private subnets                                       |

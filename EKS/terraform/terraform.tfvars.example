@@ -1,0 +1,105 @@
+# ---------------------------------------------------------------------------
+# Shared inputs for the POV EKS + PRISMA AIRS / Portkey AI Gateway stages.
+#
+# Copy to terraform.tfvars and pass into each stage with:
+#   terraform apply -var-file=../terraform.tfvars
+# (See README.md for the full apply loop.)
+#
+# Not every stage consumes every variable; unused vars are simply ignored per
+# stage. Nothing sensitive lives here — Portkey/registry credentials are supplied
+# via the console-downloaded values.yaml (see the 40-aigateway section).
+# ---------------------------------------------------------------------------
+
+# --- Core (all stages) ---
+region = "us-east-1"
+
+# --- 00-bootstrap (remote state backend) ---
+# S3 bucket + DynamoDB lock table for Terraform state. The bucket name must be
+# globally unique. Created by 00-bootstrap and passed to every other stage at init:
+#   terraform init \
+#     -backend-config="bucket=<state_bucket>" \
+#     -backend-config="dynamodb_table=<state_lock_table>" \
+#     -backend-config="region=<region>"
+state_bucket     = "airs-gw-tfstate-00001"
+state_lock_table = "airs-gw-tflock"
+
+# --- 10-network ---
+cluster_name         = "airs-gw-eks"
+vpc_cidr             = "10.20.0.0/16"
+public_subnet_cidrs  = ["10.20.0.0/20", "10.20.16.0/20"]
+private_subnet_cidrs = ["10.20.64.0/20", "10.20.80.0/20"]
+
+# --- 20-eks ---
+# kubernetes_version = "1.30"   # empty = EKS default
+node_count    = 2
+instance_type = "m5.xlarge" # 4 vCPU / 16 GB (matches GKE/AKS spec)
+
+# CIDRs allowed to reach the public API server endpoint (kubectl/helm from your
+# operator or CI egress IP). Required so stages 40/50 can apply. Empty = 0.0.0.0/0.
+authorized_networks = ["203.0.113.10/32"]
+
+# --- 30-iam / 40-aigateway (must match across both) ---
+namespace = "airs-gw"
+ksa_name  = "gateway-sa"
+
+# --- 30-iam (Amazon Bedrock access) ---
+# Bedrock has no "account" to create — enable model access once per region in the
+# Bedrock console (see README). Default allows any model; scope for production.
+# bedrock_model_arns = ["arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-5-sonnet-20240620-v1:0"]
+
+# --- 40-aigateway ---
+# Credentials come from the values.yaml downloaded from the AI Gateway console.
+# Save it as EKS/terraform/40-aigateway/values.yaml (see values.yaml.example) — the
+# values_file variable defaults to that path, so no config is needed here.
+#
+# The chart is pulled from the official airs-gw Helm repo:
+#   https://portkey-ai.github.io/airs-gw-helm
+# chart_version is PINNED to 1.2.0 by default (in variables.tf) for reproducible
+# applies. Override here to use a different chart, or set "" to pull the latest.
+# chart_version = "1.2.0"
+#
+# Gateway image: image_repository/image_tag override the gateway image only.
+image_repository = ""
+image_tag        = ""
+#
+# image_overrides pins ANY image shipped by the chart on top of the pinned chart
+# version — use it to run a newer image without bumping the chart. Keys:
+# gatewayImage, dataserviceImage, redisImage, minioImage, minioClientImage,
+# etcdImage, milvusImage. Wins over image_repository/image_tag for gatewayImage.
+# image_overrides = {
+#   gatewayImage = { tag = "2.22.0" }
+# }
+#
+# MCP: server_mode "all" runs both the gateway (8787) and the MCP server (8788)
+# in one pod, and stage 50 fronts BOTH through the same ALB + WAF web ACL.
+# Set "mcp" for MCP-only, or "" for gateway-only (MCP not exposed).
+# server_mode = "all"
+# mcp_port    = 8788
+#
+# Set true ONLY if a TLS-inspecting proxy (corporate MITM) sits between the
+# machine running Terraform and the cluster API server endpoint. It makes the
+# kubernetes/helm providers (stages 40 and 50) skip cert verification — the proxy
+# presents its own cert instead of the EKS cluster CA. The bearer token still
+# authenticates. Leave false on a direct/secure network.
+# cluster_insecure_tls = false
+
+# --- 50-ingress ---
+# WAF allowlist for callers of the gateway. Everything else gets blocked (403).
+allowed_source_ranges = ["203.0.113.0/24"]
+
+# FQDN for the gateway. The ALB has a DNS name, not a static IP (no nip.io), so:
+#   - set a real domain and CNAME it to the ALB (output alb_hostname), or
+#   - leave empty to use default_domain and reach the ALB with a Host header:
+#     curl -k --resolve airs-gw.local:443:<alb-ip> https://airs-gw.local/...
+domain = ""
+# default_domain = "airs-gw.local"
+
+# MCP endpoint hostname (SAN on the same cert, routed to port 8788 through the same
+# ALB + WAF). Leave empty to derive "mcp.<gateway-domain>". Only used with MCP on.
+mcp_domain = ""
+
+# Bring your own ACM cert instead of self-signed: set the ACM certificate ARN.
+# tls_cert_arn = "arn:aws:acm:us-east-1:<account>:certificate/<id>"
+
+# AWS Load Balancer Controller Helm chart version. Leave empty for latest.
+# lb_controller_chart_version = "1.8.1"

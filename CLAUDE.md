@@ -14,13 +14,12 @@ by a **WAF-protected HTTPS load balancer**.
 k8s-tf-examples/
   GKE/   # Google Kubernetes Engine → Vertex AI        (✅ implemented, reference)
   AKS/   # Azure Kubernetes Service → Azure OpenAI      (✅ implemented)
-  EKS/   # Amazon EKS → Amazon Bedrock                  (🚧 scaffold)
+  EKS/   # Amazon EKS → Amazon Bedrock                  (✅ implemented)
 ```
 
 Start from [GKE/terraform/README.md](GKE/terraform/README.md) — it is the reference
-implementation. **AKS** is a complete parallel implementation (all six stages, validated;
-not yet applied end-to-end against a live subscription). **EKS** currently holds only a
-directory scaffold and a README that maps each GKE stage to its cloud equivalent.
+implementation. **AKS** and **EKS** are complete parallel implementations (all six stages,
+validated; not yet applied end-to-end against a live subscription/account).
 
 ## Staged layout (every provider)
 
@@ -73,10 +72,11 @@ is never hardcoded in a `backend {}` block.
 - Run `terraform fmt` and `terraform validate` before proposing changes. Validate needs
   `terraform init -backend=false` first; `40-aigateway` also needs a real `values.yaml` present
   (it uses `file()`), so it can't be validated without one.
-- Keep the three providers structurally parallel: same stage numbers and the same
-  console-values + overlay pattern. AKS is already a complete parallel of GKE; when
-  implementing EKS, mirror the GKE stage being ported and follow that provider README's
-  GKE→cloud mapping table.
+- Keep the three providers structurally parallel: same stage numbers (00-bootstrap →
+  50-ingress) and the same console-values + overlay pattern. All three (GKE, AKS, EKS)
+  are now complete parallels — when changing one, apply the equivalent change to the
+  others (or document why it doesn't map, e.g. AWS WAF needs no CIDR chunking, EKS node
+  identity is minimal by default), and follow each provider README's GKE→cloud mapping.
 
 ## Working agreements
 
