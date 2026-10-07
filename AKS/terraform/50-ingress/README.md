@@ -60,6 +60,12 @@ cd ..
   Cloud Armor becomes: a WAF policy, a Key Vault cert, an explicit App Gateway
   (WAF_v2), the AGIC controller, and the Ingress. AGIC is installed **via Helm**
   (BYO App Gateway) so stage 20 stays cluster-only, matching GKE.
+- **Allowlist chunking (parity with GKE's Cloud Armor fix).** GKE chunks the
+  allowlist into 10-CIDR rules because Cloud Armor caps `src_ip_ranges` at 10 per
+  rule. Azure WAF custom rules accept far more IP match values per rule, so the
+  single `custom_rules` block (match on `allowed_source_ranges` with
+  `negation_condition = true`, i.e. block anything **not** in the list) is
+  sufficient here — no chunking needed for POV-scale allowlists.
 - **AGIC chart version.** The chart is pulled from the MCR OCI registry
   (`oci://mcr.microsoft.com/azure-application-gateway/charts`). OCI installs
   generally require an explicit version — set `agic_chart_version` to a published

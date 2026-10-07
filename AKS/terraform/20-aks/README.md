@@ -55,3 +55,9 @@ configure the kubernetes/helm providers.
   `kubectl get nodes`.
 - The `outbound_type = userAssignedNATGateway` binding relies on the NAT Gateway
   already being associated to the node subnet in stage 10 — apply order matters.
+- **Node identity (parity with GKE's dedicated node SA).** `SystemAssigned` gives
+  the cluster a control-plane identity and an auto-created system-assigned kubelet
+  (node) identity that is minimal by default — it only gains `AcrPull` when
+  attached to an ACR. Unlike GCE's default Compute SA (often Editor), AKS nodes do
+  **not** inherit a broad identity, so no extra least-privilege node identity is
+  created here. The gateway *pod* identity is separate (Workload Identity, stage 30).

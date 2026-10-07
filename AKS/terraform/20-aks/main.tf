@@ -32,6 +32,11 @@ resource "azurerm_kubernetes_cluster" "aks" {
     vnet_subnet_id  = local.net.aks_subnet_id
   }
 
+  # Control-plane identity. With SystemAssigned, AKS also auto-creates a
+  # system-assigned kubelet (node) identity that is minimal by default — it only
+  # gains AcrPull when attached to an ACR. This is the Azure parallel of GKE's
+  # "dedicated least-privilege node SA": AKS nodes do NOT inherit a broad default
+  # identity (unlike GCE's default Compute SA), so no extra hardening is needed here.
   identity {
     type = "SystemAssigned"
   }

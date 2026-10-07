@@ -84,3 +84,6 @@ surface here as a pod-start failure.
   deployment as a fallback.
 - Image repo/tag come from the console `values.yaml` (or the chart `appVersion`)
   unless you override `image_repository`/`image_tag`.
+- **Secrets in output.** The `helm_release` values are wrapped in `sensitive()`
+  (parity with GKE) so the console `values.yaml` credentials aren't echoed into
+  `plan`/`apply` output or CI logs.
