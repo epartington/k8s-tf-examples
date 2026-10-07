@@ -13,13 +13,14 @@ by a **WAF-protected HTTPS load balancer**.
 ```text
 k8s-tf-examples/
   GKE/   # Google Kubernetes Engine → Vertex AI        (✅ implemented, reference)
-  AKS/   # Azure Kubernetes Service → Azure OpenAI      (🚧 scaffold)
+  AKS/   # Azure Kubernetes Service → Azure OpenAI      (✅ implemented)
   EKS/   # Amazon EKS → Amazon Bedrock                  (🚧 scaffold)
 ```
 
 Start from [GKE/terraform/README.md](GKE/terraform/README.md) — it is the reference
-implementation. AKS/EKS currently hold only a directory scaffold and a README that maps each
-GKE stage to its cloud equivalent.
+implementation. **AKS** is a complete parallel implementation (all six stages, validated;
+not yet applied end-to-end against a live subscription). **EKS** currently holds only a
+directory scaffold and a README that maps each GKE stage to its cloud equivalent.
 
 ## Staged layout (every provider)
 
@@ -42,15 +43,15 @@ is never hardcoded in a `backend {}` block.
 
 ## How it is applied
 
-- **Locally**, authenticated through the cloud CLI (for GKE: `gcloud auth application-default
-  login` for ADC — separate from `gcloud auth login`). See the provider README for the exact
-  apply loop and prerequisites.
+- **Locally**, authenticated through the cloud CLI (GKE: `gcloud auth application-default
+  login` for ADC — separate from `gcloud auth login`; AKS: `az login` + `az account set`).
+  See the provider README for the exact apply loop and prerequisites.
 - The machine running Terraform must be in the cluster's control-plane authorized-network
   allowlist (stages 40/50 talk to the cluster API), and in the WAF allowlist to call the
   gateway. Public egress IP: `curl -s ifconfig.me`.
 - Gateway (`8787`) and MCP server (`8788`) run in one pod and are both fronted by the same
-  load balancer, cert, and WAF — MCP host-based on `mcp.<domain>` (GCE can't strip path
-  prefixes, so a dedicated host with `/*` is used rather than a `/mcp` path).
+  load balancer, cert, and WAF — MCP host-based on `mcp.<domain>` (the L7 load balancers here
+  don't strip path prefixes, so a dedicated host with `/*` is used rather than a `/mcp` path).
 
 ## Conventions & guardrails
 
@@ -60,18 +61,22 @@ is never hardcoded in a `backend {}` block.
   `git check-ignore <path>` before adding anything under `40-aigateway/`.
 - `40-aigateway` pulls the chart from the official Helm repo
   (`https://portkey-ai.github.io/airs-gw-helm`); a copy is vendored under
-  `GKE/docs/airs-gw-helm-main/` **for reference only**. The image version is owned by the
-  chart / console `values.yaml`, not pinned in Terraform (override vars exist but default off).
+  `GKE/docs/airs-gw-helm-main/` **for reference only**. The **chart version is pinned**
+  (`chart_version`, default `1.2.0`; set `""` for latest). Image tags come from the chart
+  `appVersion` / console `values.yaml` unless overridden via `image_repository`/`image_tag`
+  (gateway only) or the `image_overrides` map (any chart image, on top of the pinned chart).
 - Terraform passes the console `values.yaml` first and a **Terraform-generated overlay**
-  second, so the overlay wins on intersection (Workload Identity annotation, container-native
-  LB annotations, auth-mode env, `ingress.enabled=false`). Keep cloud-specific settings in the
-  overlay, not the console file.
+  second, so the overlay wins on intersection (Workload Identity annotation/pod label, LB/NEG
+  annotations, auth-mode env, `ingress.enabled=false`). Keep cloud-specific settings in the
+  overlay, not the console file. The combined `helm_release` values are wrapped in
+  `sensitive()` so credentials don't surface in `plan`/`apply` output.
 - Run `terraform fmt` and `terraform validate` before proposing changes. Validate needs
   `terraform init -backend=false` first; `40-aigateway` also needs a real `values.yaml` present
   (it uses `file()`), so it can't be validated without one.
 - Keep the three providers structurally parallel: same stage numbers and the same
-  console-values + overlay pattern. When implementing AKS/EKS, mirror the GKE stage being
-  ported and follow that provider README's GKE→cloud mapping table.
+  console-values + overlay pattern. AKS is already a complete parallel of GKE; when
+  implementing EKS, mirror the GKE stage being ported and follow that provider README's
+  GKE→cloud mapping table.
 
 ## Working agreements
 
