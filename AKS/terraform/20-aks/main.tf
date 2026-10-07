@@ -20,6 +20,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
   resource_group_name = local.net.resource_group_name
   dns_prefix          = var.cluster_name
   kubernetes_version  = var.kubernetes_version != "" ? var.kubernetes_version : null
+  tags                = var.tags
 
   oidc_issuer_enabled       = true
   workload_identity_enabled = true

@@ -128,3 +128,9 @@ variable "cluster_insecure_tls" {
   description = "Skip TLS verification of the cluster API server endpoint for the kubernetes/helm providers. Set true ONLY when a TLS-inspecting proxy (corporate MITM) sits between the operator and the cluster, so the endpoint presents the proxy's cert instead of the AKS cluster CA. The client certificate still authenticates the request. Leave false for a normal secure connection."
   default     = false
 }
+
+variable "tags" {
+  type        = map(string)
+  description = "Tags applied to all taggable resources (e.g. { CreatedBy = \"Eric Partington\" }). Set once in terraform.tfvars and passed to every stage."
+  default     = {}
+}

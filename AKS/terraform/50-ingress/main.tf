@@ -77,6 +77,7 @@ resource "azurerm_web_application_firewall_policy" "waf" {
   name                = var.waf_policy_name
   location            = local.location
   resource_group_name = local.rg
+  tags                = var.tags
 
   policy_settings {
     enabled = true
@@ -116,6 +117,7 @@ resource "azurerm_user_assigned_identity" "appgw" {
   name                = var.appgw_identity_name
   location            = local.location
   resource_group_name = local.rg
+  tags                = var.tags
 }
 
 resource "azurerm_key_vault" "kv" {
@@ -125,6 +127,7 @@ resource "azurerm_key_vault" "kv" {
   tenant_id                  = data.azurerm_client_config.current.tenant_id
   sku_name                   = "standard"
   soft_delete_retention_days = 7
+  tags                       = var.tags
 }
 
 # The operator (Terraform principal) needs cert/secret permissions to generate
@@ -199,6 +202,7 @@ resource "azurerm_application_gateway" "appgw" {
   name                = var.appgw_name
   location            = local.location
   resource_group_name = local.rg
+  tags                = var.tags
 
   sku {
     name     = "WAF_v2"

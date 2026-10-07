@@ -130,3 +130,9 @@ variable "model_access_roles" {
   description = "Data-plane roles granted to the gateway identity on the Foundry account. \"Cognitive Services User\" covers the Foundry inference (/models) endpoint; \"Cognitive Services OpenAI User\" covers OpenAI-format calls."
   default     = ["Cognitive Services User", "Cognitive Services OpenAI User"]
 }
+
+variable "tags" {
+  type        = map(string)
+  description = "Tags applied to all taggable resources (e.g. { CreatedBy = \"Eric Partington\" }). Set once in terraform.tfvars and passed to every stage."
+  default     = {}
+}

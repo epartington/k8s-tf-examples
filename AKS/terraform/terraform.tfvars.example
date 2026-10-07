@@ -14,6 +14,13 @@
 subscription_id = "00000000-0000-0000-0000-000000000000"
 location        = "canadacentral"
 
+# Tags applied to every taggable resource across all stages. Add any tags your
+# org/subscription requires here (owner, cost center, environment, ...).
+tags = {
+  CreatedBy = "Eric Partington"
+  project   = "airs-gw"
+}
+
 # --- 00-bootstrap (remote state backend) ---
 # Resource group + Storage Account for Terraform state. The storage account name
 # must be globally unique (3-24 lowercase alphanumerics). Created by 00-bootstrap

@@ -73,3 +73,9 @@ variable "appgw_public_ip_name" {
   description = "Name of the Standard static public IP reserved for the Application Gateway frontend (stage 50)."
   default     = "airs-gw-appgw-pip"
 }
+
+variable "tags" {
+  type        = map(string)
+  description = "Tags applied to all taggable resources (e.g. { CreatedBy = \"Eric Partington\" }). Set once in terraform.tfvars and passed to every stage."
+  default     = {}
+}

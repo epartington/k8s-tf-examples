@@ -25,6 +25,18 @@ variable "container_name" {
   default     = "tfstate"
 }
 
+variable "state_allowed_ip_ranges" {
+  type        = list(string)
+  description = "Public CIDRs allowed to reach the state Storage Account (operator / CI egress). Sets a default-deny network ACL to satisfy the \"restrict network access\" policy. Empty leaves the account open (no network rules)."
+  default     = []
+}
+
+variable "tags" {
+  type        = map(string)
+  description = "Tags applied to all taggable resources (e.g. { CreatedBy = \"Eric Partington\" }). Set once in terraform.tfvars and passed to every stage."
+  default     = {}
+}
+
 variable "register_providers" {
   type        = bool
   description = "Register the Azure resource providers the later stages depend on. Set false if they are already registered on the subscription (registration requires subscription-level rights)."

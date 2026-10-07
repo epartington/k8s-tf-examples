@@ -35,6 +35,7 @@ resource "azurerm_user_assigned_identity" "gateway" {
   name                = var.gateway_identity_name
   location            = local.location
   resource_group_name = local.rg
+  tags                = var.tags
 }
 
 # Federate the gateway KSA to the managed identity via the cluster OIDC issuer.
@@ -62,6 +63,7 @@ resource "azurerm_cognitive_account" "foundry" {
   kind                  = "AIServices"
   sku_name              = "S0"
   custom_subdomain_name = var.foundry_account_name
+  tags                  = var.tags
 }
 
 # One model deployment from the catalog. format "OpenAI" for GPT models, or
@@ -102,6 +104,7 @@ resource "azurerm_user_assigned_identity" "agic" {
   name                = var.agic_identity_name
   location            = local.location
   resource_group_name = local.rg
+  tags                = var.tags
 }
 
 resource "azurerm_federated_identity_credential" "agic" {

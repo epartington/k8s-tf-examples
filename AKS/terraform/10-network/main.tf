@@ -2,6 +2,7 @@
 resource "azurerm_resource_group" "main" {
   name     = var.resource_group
   location = var.location
+  tags     = var.tags
 }
 
 # Isolated VNet dedicated to this POV.
@@ -10,6 +11,7 @@ resource "azurerm_virtual_network" "vnet" {
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   address_space       = [var.vnet_cidr]
+  tags                = var.tags
 }
 
 # Subnet for AKS nodes (pods use Azure CNI overlay, so they don't consume this range).
@@ -36,6 +38,7 @@ resource "azurerm_public_ip" "nat" {
   resource_group_name = azurerm_resource_group.main.name
   allocation_method   = "Static"
   sku                 = "Standard"
+  tags                = var.tags
 }
 
 resource "azurerm_nat_gateway" "nat" {
@@ -43,6 +46,7 @@ resource "azurerm_nat_gateway" "nat" {
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   sku_name            = "Standard"
+  tags                = var.tags
 }
 
 resource "azurerm_nat_gateway_public_ip_association" "nat" {
@@ -62,6 +66,7 @@ resource "azurerm_network_security_group" "aks" {
   name                = var.nsg_name
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
+  tags                = var.tags
 }
 
 resource "azurerm_subnet_network_security_group_association" "aks" {
@@ -77,4 +82,5 @@ resource "azurerm_public_ip" "appgw" {
   resource_group_name = azurerm_resource_group.main.name
   allocation_method   = "Static"
   sku                 = "Standard"
+  tags                = var.tags
 }

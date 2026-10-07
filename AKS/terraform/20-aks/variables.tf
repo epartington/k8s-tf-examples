@@ -60,3 +60,9 @@ variable "authorized_networks" {
   description = "CIDRs allowed to reach the public API server endpoint (operator / CI egress IPs) so Helm and kubectl can apply. Empty leaves the API server open."
   default     = []
 }
+
+variable "tags" {
+  type        = map(string)
+  description = "Tags applied to all taggable resources (e.g. { CreatedBy = \"Eric Partington\" }). Set once in terraform.tfvars and passed to every stage."
+  default     = {}
+}
