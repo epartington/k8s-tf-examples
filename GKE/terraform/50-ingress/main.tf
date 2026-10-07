@@ -18,7 +18,7 @@ data "terraform_remote_state" "portkey" {
   backend = "gcs"
   config = {
     bucket = var.state_bucket
-    prefix = "40-portkey"
+    prefix = "40-aigateway"
   }
 }
 

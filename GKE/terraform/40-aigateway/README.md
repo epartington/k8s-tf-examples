@@ -1,7 +1,7 @@
-# 40-portkey — namespace + Helm release of the gateway
+# 40-aigateway — namespace + Helm release of the gateway
 
 Deploys the PRISMA AIRS / Portkey `airs-gw` chart into the cluster. State prefix
-`40-portkey`. This is the first stage that **talks to the cluster API** (the
+`40-aigateway`. This is the first stage that **talks to the cluster API** (the
 kubernetes and helm providers), so this machine's egress IP must be in
 `authorized_networks`.
 
@@ -10,7 +10,7 @@ kubernetes and helm providers), so this machine's egress IP must be in
 Download the `values.yaml` from the AI Gateway (Portkey) console and save it here:
 
 ```text
-40-portkey/values.yaml
+40-aigateway/values.yaml
 ```
 
 It carries the hybrid credentials (license `PORTKEY_CLIENT_AUTH`, `ORGANISATIONS_TO_SYNC`,
@@ -41,7 +41,7 @@ Stage 40 can't `plan`/`apply` (or `validate`) without it — the config uses `fi
 ## Run
 
 ```sh
-cd 40-portkey
+cd 40-aigateway
 # save values.yaml here first (see above)
 terraform init -backend-config="bucket=$(terraform -chdir=../00-bootstrap output -raw state_bucket)"
 terraform plan  -var-file=../terraform.tfvars

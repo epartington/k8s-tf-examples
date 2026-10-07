@@ -22,12 +22,12 @@ variable "gsa_name" {
 
 variable "namespace" {
   type        = string
-  description = "Kubernetes namespace the gateway runs in. Must match stage 40-portkey."
+  description = "Kubernetes namespace the gateway runs in. Must match stage 40-aigateway."
   default     = "airs-gw"
 }
 
 variable "ksa_name" {
   type        = string
-  description = "Kubernetes service account name for the gateway pod. Must match stage 40-portkey."
+  description = "Kubernetes service account name for the gateway pod. Must match stage 40-aigateway."
   default     = "gateway-sa"
 }

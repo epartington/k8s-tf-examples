@@ -32,7 +32,7 @@ in numeric order; each later stage reads earlier outputs via `terraform_remote_s
 | `10-network`   | Isolated network: VPC/VNet, subnets, egress NAT, firewall/NSG/SG, static ingress IP. |
 | `20-<k8s>`     | Private cluster + node pool, OIDC issuer for pod identity. |
 | `30-iam`       | Cloud identity for the gateway pod (WI/IRSA) + model-service role binding. |
-| `40-portkey`   | Namespace + `helm_release` of `airs-gw` (mostly cloud-agnostic). |
+| `40-aigateway`   | Namespace + `helm_release` of `airs-gw` (mostly cloud-agnostic). |
 | `50-ingress`   | WAF/IP allowlist, managed TLS cert, HTTPS load balancer / Ingress. |
 
 Stage `00-bootstrap` uses **local** state to create the remote backend; stages `10`–`50`
@@ -55,10 +55,10 @@ is never hardcoded in a `backend {}` block.
 ## Conventions & guardrails
 
 - **Never commit secrets.** Credentials come from a `values.yaml` **downloaded from the AI
-  Gateway console** and placed at `<CLOUD>/terraform/40-portkey/values.yaml`. That file, all
+  Gateway console** and placed at `<CLOUD>/terraform/40-aigateway/values.yaml`. That file, all
   `*.tfvars` (except `*.tfvars.example`), and `*.tfstate*` are gitignored. Verify with
-  `git check-ignore <path>` before adding anything under `40-portkey/`.
-- `40-portkey` pulls the chart from the official Helm repo
+  `git check-ignore <path>` before adding anything under `40-aigateway/`.
+- `40-aigateway` pulls the chart from the official Helm repo
   (`https://portkey-ai.github.io/airs-gw-helm`); a copy is vendored under
   `GKE/docs/airs-gw-helm-main/` **for reference only**. The image version is owned by the
   chart / console `values.yaml`, not pinned in Terraform (override vars exist but default off).
@@ -67,7 +67,7 @@ is never hardcoded in a `backend {}` block.
   LB annotations, auth-mode env, `ingress.enabled=false`). Keep cloud-specific settings in the
   overlay, not the console file.
 - Run `terraform fmt` and `terraform validate` before proposing changes. Validate needs
-  `terraform init -backend=false` first; `40-portkey` also needs a real `values.yaml` present
+  `terraform init -backend=false` first; `40-aigateway` also needs a real `values.yaml` present
   (it uses `file()`), so it can't be validated without one.
 - Keep the three providers structurally parallel: same stage numbers and the same
   console-values + overlay pattern. When implementing AKS/EKS, mirror the GKE stage being
@@ -77,5 +77,5 @@ is never hardcoded in a `backend {}` block.
 
 - Commit or push **only when the user explicitly asks.** This environment has no Git
   credentials, so pushes must come from the user's side.
-- Before editing or deleting a file, read it — especially anything under `40-portkey/`, which
+- Before editing or deleting a file, read it — especially anything under `40-aigateway/`, which
   may contain live credentials that must not be echoed or committed.

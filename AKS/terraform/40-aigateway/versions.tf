@@ -18,7 +18,7 @@ terraform {
 
   backend "azurerm" {
     container_name = "tfstate"
-    key            = "40-portkey.tfstate"
+    key            = "40-aigateway.tfstate"
   }
 }
 

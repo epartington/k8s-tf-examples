@@ -17,7 +17,7 @@ terraform {
   }
 
   backend "gcs" {
-    prefix = "40-portkey"
+    prefix = "40-aigateway"
   }
 }
 

@@ -10,7 +10,7 @@ variable "region" {
 
 variable "state_bucket" {
   type        = string
-  description = "GCS bucket holding remote state (10-network, 20-gke, 40-portkey outputs)."
+  description = "GCS bucket holding remote state (10-network, 20-gke, 40-aigateway outputs)."
 }
 
 variable "domain" {

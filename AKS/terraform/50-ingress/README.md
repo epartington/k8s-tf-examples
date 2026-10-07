@@ -27,7 +27,7 @@ egress-IP allowlist and `cluster_insecure_tls` note as stage 40 apply.
   `appgw_public_ip_id`, `appgw_public_ip_address`.
 - `20-aks` — kube_config values for the providers.
 - `30-iam` — `agic_identity_client_id`, `agic_namespace`.
-- `40-portkey` — `namespace`, `service_name`, `service_port`, `mcp_enabled`,
+- `40-aigateway` — `namespace`, `service_name`, `service_port`, `mcp_enabled`,
   `mcp_service_port`.
 
 ## Inputs used (from `../terraform.tfvars`)

@@ -22,7 +22,7 @@ EKS/terraform/
   10-network/     # VPC, public/private subnets, IGW, NAT Gateway, security groups, EIP
   20-eks/         # Private EKS cluster + managed node group, OIDC provider (IRSA)
   30-iam/         # IAM role for service account (IRSA) + policy (Amazon Bedrock)
-  40-portkey/     # namespace + helm_release of airs-gw (console values.yaml + AWS overlay)
+  40-aigateway/     # namespace + helm_release of airs-gw (console values.yaml + AWS overlay)
   50-ingress/     # WAF web ACL, ACM cert, ingress (ALB via AWS Load Balancer Controller)
 ```
 
@@ -44,8 +44,8 @@ EKS/terraform/
 
 ## Reuse from GKE
 
-Stage **40-portkey** is almost cloud-agnostic: same official Helm repo
+Stage **40-aigateway** is almost cloud-agnostic: same official Helm repo
 (`https://portkey-ai.github.io/airs-gw-helm`), same console-downloaded `values.yaml` for
 credentials, same overlay pattern. Only the cloud-specific overlay changes (IRSA role-ARN
 service-account annotation and auth env) — see the GKE
-[40-portkey](../GKE/terraform/40-portkey/) stage as the reference implementation.
+[40-aigateway](../GKE/terraform/40-aigateway/) stage as the reference implementation.

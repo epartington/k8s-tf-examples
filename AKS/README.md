@@ -23,7 +23,7 @@ AKS/terraform/
   10-network/     # VNet, subnet, NAT Gateway, NSG, public IP
   20-aks/         # Private AKS cluster + node pool, OIDC issuer + Workload Identity
   30-iam/         # gateway + AGIC managed identities (federated) + Azure OpenAI account + role
-  40-portkey/     # namespace + helm_release of airs-gw (console values.yaml + Azure overlay)
+  40-aigateway/     # namespace + helm_release of airs-gw (console values.yaml + Azure overlay)
   50-ingress/     # WAF policy, Key Vault self-signed cert, App Gateway (WAF_v2) + AGIC + Ingress
 ```
 
@@ -45,8 +45,8 @@ AKS/terraform/
 
 ## Reuse from GKE
 
-Stage **40-portkey** is almost cloud-agnostic: same official Helm repo
+Stage **40-aigateway** is almost cloud-agnostic: same official Helm repo
 (`https://portkey-ai.github.io/airs-gw-helm`), same console-downloaded `values.yaml` for
 credentials, same overlay pattern. Only the cloud-specific overlay changes (Workload
 Identity annotations and auth-mode env) — see the GKE
-[40-portkey](../GKE/terraform/40-portkey/) stage as the reference implementation.
+[40-aigateway](../GKE/terraform/40-aigateway/) stage as the reference implementation.

@@ -16,7 +16,7 @@ variable "state_resource_group" {
 
 variable "storage_account" {
   type        = string
-  description = "Storage Account holding remote state (10-network, 20-aks, 30-iam, 40-portkey outputs)."
+  description = "Storage Account holding remote state (10-network, 20-aks, 30-iam, 40-aigateway outputs)."
 }
 
 variable "container_name" {

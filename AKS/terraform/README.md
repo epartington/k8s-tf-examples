@@ -42,7 +42,7 @@ AKS/terraform/
   10-network/     # VNet, subnets (aks + appgw), NAT Gateway + egress IP, NSG, App Gateway IP
   20-aks/         # private-node AKS + node pool, OIDC issuer + Workload Identity
   30-iam/         # gateway UAMI + AGIC UAMI (federated to KSAs) + Azure OpenAI + role
-  40-portkey/     # namespace + helm_release of airs-gw (console values.yaml + Azure overlay)
+  40-aigateway/     # namespace + helm_release of airs-gw (console values.yaml + Azure overlay)
   50-ingress/     # WAF policy, Key Vault self-signed cert, App Gateway (WAF_v2), AGIC, Ingress
 ```
 
@@ -158,16 +158,16 @@ Credentials are supplied via a `values.yaml` you download from the AI Gateway (P
 console for this hybrid data plane. Save it as:
 
 ```text
-AKS/terraform/40-portkey/values.yaml
+AKS/terraform/40-aigateway/values.yaml
 ```
 
 The `values_file` variable defaults to that path, so stage 40 picks it up automatically —
-see [40-portkey/values.yaml.example](40-portkey/values.yaml.example) for the expected
+see [40-aigateway/values.yaml.example](40-aigateway/values.yaml.example) for the expected
 shape. This file carries secrets and is **gitignored**; never commit it. Verify before
-adding anything under `40-portkey/`:
+adding anything under `40-aigateway/`:
 
 ```sh
-git check-ignore 40-portkey/values.yaml
+git check-ignore 40-aigateway/values.yaml
 ```
 
 Terraform overlays the Azure-specific settings on top of your download (Workload Identity
@@ -196,14 +196,14 @@ do **not** hand-set those in the file.
    Note the `resource_group_name` / `storage_account_name` outputs — they must equal the
    `state_resource_group` / `storage_account` in your tfvars.
 
-3. Download the console `values.yaml` and save it to `40-portkey/values.yaml` (see above).
+3. Download the console `values.yaml` and save it to `40-aigateway/values.yaml` (see above).
    Required before stage 40.
 
 4. **Stages 10 → 50** — each uses the `azurerm` backend, so pass the state RG + account at
    init:
 
    ```sh
-   for stage in 10-network 20-aks 30-iam 40-portkey 50-ingress; do
+   for stage in 10-network 20-aks 30-iam 40-aigateway 50-ingress; do
      cd "$stage"
      terraform init \
        -backend-config="resource_group_name=$(terraform -chdir=../00-bootstrap output -raw resource_group_name)" \
@@ -309,7 +309,7 @@ do **not** hand-set those in the file.
 Destroy in reverse order (50 → 00):
 
 ```sh
-for stage in 50-ingress 40-portkey 30-iam 20-aks 10-network; do
+for stage in 50-ingress 40-aigateway 30-iam 20-aks 10-network; do
   terraform -chdir="$stage" destroy -var-file=../terraform.tfvars
 done
 # 00-bootstrap last; the state Storage Account has prevent_destroy — empty and remove it

@@ -34,7 +34,7 @@ data "terraform_remote_state" "portkey" {
     resource_group_name  = var.state_resource_group
     storage_account_name = var.storage_account
     container_name       = var.container_name
-    key                  = "40-portkey.tfstate"
+    key                  = "40-aigateway.tfstate"
   }
 }
 

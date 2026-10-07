@@ -37,7 +37,7 @@ GKE/terraform/
   10-network/     # VPC, subnet, Cloud Router + NAT, firewall, global static IP
   20-gke/         # private VPC-native GKE cluster + node pool, Workload Identity
   30-iam/         # gateway GSA (Vertex) + Workload Identity binding
-  40-portkey/     # namespace + helm_release of airs-gw (console values.yaml + GCP overlay)
+  40-aigateway/     # namespace + helm_release of airs-gw (console values.yaml + GCP overlay)
   50-ingress/     # Cloud Armor policy, managed cert, BackendConfig, Ingress
 ```
 
@@ -155,11 +155,11 @@ Credentials are supplied via a `values.yaml` you download from the AI Gateway
 (Portkey) console for this hybrid data plane. Save it as:
 
 ```text
-GKE/terraform/40-portkey/values.yaml
+GKE/terraform/40-aigateway/values.yaml
 ```
 
 The `values_file` variable defaults to that path, so stage 40 picks it up
-automatically — see [40-portkey/values.yaml.example](40-portkey/values.yaml.example)
+automatically — see [40-aigateway/values.yaml.example](40-aigateway/values.yaml.example)
 for the expected shape. This file carries secrets and is **gitignored**; never
 commit it.
 
@@ -187,13 +187,13 @@ and `ingress.enabled=false`), so you do **not** hand-set those in the file.
 
    Note the `state_bucket` output — it must equal the `state_bucket` in your tfvars.
 
-3. Download the console `values.yaml` and save it to `40-portkey/values.yaml`
+3. Download the console `values.yaml` and save it to `40-aigateway/values.yaml`
    (see above). Required before stage 40.
 
 4. **Stages 10 → 50** — each uses the GCS backend, so pass the bucket at init:
 
    ```sh
-   for stage in 10-network 20-gke 30-iam 40-portkey 50-ingress; do
+   for stage in 10-network 20-gke 30-iam 40-aigateway 50-ingress; do
      cd "$stage"
      terraform init -backend-config="bucket=$(terraform -chdir=../00-bootstrap output -raw state_bucket)"
      terraform apply -var-file=../terraform.tfvars
@@ -295,7 +295,7 @@ and `ingress.enabled=false`), so you do **not** hand-set those in the file.
 Destroy in reverse order (50 → 00):
 
 ```sh
-for stage in 50-ingress 40-portkey 30-iam 20-gke 10-network; do
+for stage in 50-ingress 40-aigateway 30-iam 20-gke 10-network; do
   terraform -chdir="$stage" destroy -var-file=../terraform.tfvars
 done
 # 00-bootstrap last; the state bucket has prevent_destroy — empty and remove it manually if desired.

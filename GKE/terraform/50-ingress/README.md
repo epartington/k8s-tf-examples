@@ -21,7 +21,7 @@ and `cluster_insecure_tls` note as stage 40 apply.
 
 - `20-gke` — `endpoint` + `ca_certificate` for the provider.
 - `10-network` — `static_ip_name` + `static_ip_address` for the Ingress / domains.
-- `40-portkey` — `service_name`, ports, `mcp_enabled`, `backend_config_name`.
+- `40-aigateway` — `service_name`, ports, `mcp_enabled`, `backend_config_name`.
 
 ## Inputs used (from `../terraform.tfvars`)
 

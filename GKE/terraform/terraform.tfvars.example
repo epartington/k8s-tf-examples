@@ -7,7 +7,7 @@
 #
 # Not every stage consumes every variable; unused vars are simply ignored per
 # stage. Nothing sensitive lives here — Portkey/registry credentials are supplied
-# via the console-downloaded values.yaml (see the 40-portkey section).
+# via the console-downloaded values.yaml (see the 40-aigateway section).
 # ---------------------------------------------------------------------------
 
 # --- Core (all stages) ---
@@ -40,13 +40,13 @@ authorized_networks = ["203.0.113.10/32"]
 # Defaults to project_id when empty. Set for cross-project Vertex access.
 model_project_id = ""
 
-# --- 30-iam / 40-portkey (must match across both) ---
+# --- 30-iam / 40-aigateway (must match across both) ---
 namespace = "airs-gw"
 ksa_name  = "gateway-sa"
 
-# --- 40-portkey ---
+# --- 40-aigateway ---
 # Credentials come from the values.yaml downloaded from the AI Gateway console.
-# Save it as GKE/terraform/40-portkey/values.yaml (see values.yaml.example) — the
+# Save it as GKE/terraform/40-aigateway/values.yaml (see values.yaml.example) — the
 # values_file variable defaults to that path, so no config is needed here.
 # Override only if you keep it elsewhere:
 # values_file = "/abs/path/to/values.yaml"

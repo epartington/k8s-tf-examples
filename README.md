@@ -13,5 +13,5 @@ balancer, TLS cert, and WAF/IP allowlist.
 
 Start with [GKE](GKE/terraform/README.md) — it is the reference implementation. The AKS and
 EKS READMEs map each GKE stage to its Azure/AWS equivalent so they can be filled in
-consistently. Stage `40-portkey` (the Helm release) is largely cloud-agnostic and reused
+consistently. Stage `40-aigateway` (the Helm release) is largely cloud-agnostic and reused
 across all three.

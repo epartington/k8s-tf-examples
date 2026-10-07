@@ -1,16 +1,28 @@
-variable "project_id" {
+variable "subscription_id" {
   type        = string
-  description = "Existing GCP project ID that hosts the cluster."
+  description = "Existing Azure subscription ID."
 }
 
-variable "region" {
+variable "location" {
   type        = string
   description = "Default region (provider only)."
 }
 
-variable "state_bucket" {
+variable "state_resource_group" {
   type        = string
-  description = "GCS bucket holding remote state (to read the 20-gke and 30-iam outputs)."
+  description = "Resource group of the state Storage Account (to read remote state)."
+  default     = "airs-gw-tfstate-rg"
+}
+
+variable "storage_account" {
+  type        = string
+  description = "Storage Account holding remote state (to read the 20-aks and 30-iam outputs)."
+}
+
+variable "container_name" {
+  type        = string
+  description = "Blob container holding remote state."
+  default     = "tfstate"
 }
 
 variable "namespace" {
@@ -21,7 +33,7 @@ variable "namespace" {
 
 variable "ksa_name" {
   type        = string
-  description = "Kubernetes service account name for the gateway pod. Must match stage 30-iam's WI binding."
+  description = "Kubernetes service account name for the gateway pod. Must match stage 30-iam's federated credential."
   default     = "gateway-sa"
 }
 
@@ -51,7 +63,7 @@ variable "chart_version" {
 
 variable "values_file" {
   type        = string
-  description = "Path to the values.yaml downloaded from the AI Gateway console (carries the Portkey credentials). Defaults to values.yaml in this stage directory (40-portkey), so simply placing the downloaded file there works. See values.yaml.example."
+  description = "Path to the values.yaml downloaded from the AI Gateway console (carries the Portkey credentials). Defaults to values.yaml in this stage directory (40-aigateway), so simply placing the downloaded file there works. See values.yaml.example."
   default     = ""
 }
 
@@ -75,7 +87,7 @@ variable "gateway_port" {
 
 variable "server_mode" {
   type        = string
-  description = "Chart SERVER_MODE. 'all' runs both the gateway (gateway_port) and the MCP server (mcp_port) in one pod; 'mcp' runs only MCP; '' runs only the gateway. The POV uses 'all' so both are fronted by the stage-50 ALB."
+  description = "Chart SERVER_MODE. 'all' runs both the gateway (gateway_port) and the MCP server (mcp_port) in one pod; 'mcp' runs only MCP; '' runs only the gateway. The POV uses 'all' so both are fronted by the stage-50 Application Gateway."
   default     = "all"
 
   validation {
@@ -90,14 +102,8 @@ variable "mcp_port" {
   default     = 8788
 }
 
-variable "backend_config_name" {
-  type        = string
-  description = "Name of the BackendConfig created in stage 50-ingress; referenced here via the Service annotation."
-  default     = "airs-gw-backendconfig"
-}
-
 variable "cluster_insecure_tls" {
   type        = bool
-  description = "Skip TLS verification of the cluster control-plane endpoint for the kubernetes/helm providers. Set true ONLY when a TLS-inspecting proxy (corporate MITM) sits between the operator and the cluster, so the endpoint presents the proxy's cert instead of the GKE cluster CA. The bearer token still authenticates the request. Leave false for a normal secure connection."
+  description = "Skip TLS verification of the cluster API server endpoint for the kubernetes/helm providers. Set true ONLY when a TLS-inspecting proxy (corporate MITM) sits between the operator and the cluster, so the endpoint presents the proxy's cert instead of the AKS cluster CA. The client certificate still authenticates the request. Leave false for a normal secure connection."
   default     = false
 }
