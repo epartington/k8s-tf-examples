@@ -61,6 +61,12 @@ variable "managed_cert_name" {
   default     = "airs-gw-cert"
 }
 
+variable "tls_cert_name" {
+  type        = string
+  description = "Name of an existing pre-shared Compute SSL certificate to use instead of the Google-managed one (bring-your-own). Create it first (e.g. `gcloud compute ssl-certificates create <name> --certificate=cert.pem --private-key=key.pem --global` or a google_compute_ssl_certificate resource). Leave empty to provision a Google-managed cert for the derived domain."
+  default     = ""
+}
+
 variable "ingress_name" {
   type        = string
   description = "Name of the Ingress object."

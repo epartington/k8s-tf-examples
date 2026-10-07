@@ -10,6 +10,7 @@ and `cluster_insecure_tls` note as stage 40 apply.
   `allowed_source_ranges`.
 - `google_compute_managed_ssl_certificate.cert` — Google-managed cert. Domains:
   `<domain>` (or `<static-ip>.nip.io`) plus `mcp.<domain>` when MCP is enabled.
+  **Skipped when `tls_cert_name` is set** (bring-your-own pre-shared cert).
 - `kubernetes_manifest.backend_config` — `BackendConfig` attaching the Cloud Armor
   policy and health check (`/v1/health` on the gateway port).
 - `kubernetes_ingress_v1.gateway` — `gce` Ingress bound to the stage-10 static IP,
@@ -26,7 +27,8 @@ and `cluster_insecure_tls` note as stage 40 apply.
 ## Inputs used (from `../terraform.tfvars`)
 
 `project_id`, `region`, `allowed_source_ranges`, `domain`, `mcp_domain`,
-`iap_enabled` (+ `iap_support_email`, `iap_oauth_secret_name`), `cluster_insecure_tls`.
+`tls_cert_name` (optional, BYO cert), `iap_enabled` (+ `iap_support_email`,
+`iap_oauth_secret_name`), `cluster_insecure_tls`.
 
 ## Run
 
@@ -95,6 +97,13 @@ same cert and Cloud Armor policy.
   `gcloud compute ssl-certificates describe airs-gw-cert --global --format='value(managed.status)'`.
 - With a real domain, point A records for both `<domain>` and `mcp.<domain>` at
   `ingress_ip`. The nip.io fallback resolves both automatically.
+- **Bring your own cert** (parallel to AKS `tls_cert_keyvault_secret_id` / EKS
+  `tls_cert_arn`): create a global pre-shared SSL cert first
+  (`gcloud compute ssl-certificates create airs-gw-byo --certificate=cert.pem
+  --private-key=key.pem --global`), then set `tls_cert_name = "airs-gw-byo"`. The
+  Ingress references it and the managed cert is skipped (no `ACTIVE`-wait, no
+  domain-resolves-to-IP dependency). The Google-managed cert remains the default
+  (free, auto-renewed) when `tls_cert_name` is empty.
 - **IAP** is a scaffold and depends on the deprecated IAP OAuth Admin API; Cloud
   Armor is the primary POV control. See the top-level [README](../README.md#notes--caveats).
 - **Behind a TLS-inspecting proxy?** If `gcloud`/`kubectl`/`curl` (or the

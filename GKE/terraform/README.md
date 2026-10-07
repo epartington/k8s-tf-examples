@@ -260,6 +260,11 @@ and `ingress.enabled=false`), so you do **not** hand-set those in the file.
   resolves to the load balancer IP and the LB is serving. With a real domain, point
   an A record at the `ingress_ip` output. With the **nip.io fallback** (empty
   `domain`), the cert domain is `<ip>.nip.io`; provisioning can take 15–60 min.
+- **Bring your own cert**: set `tls_cert_name` to an existing global pre-shared SSL
+  certificate to skip the managed cert entirely (no `ACTIVE`-wait). This is GKE's
+  equivalent of AKS `tls_cert_keyvault_secret_id` / EKS `tls_cert_arn` — see
+  [50-ingress/README.md](50-ingress/README.md). The managed cert is the default,
+  since GKE (unlike AKS/EKS) gets free auto-renewed certs.
 - **IAP vs API traffic**: IAP authenticates browser/user identities and would block
   plain API calls, so it is **off by default**. Cloud Armor is the primary POV
   control. The `iap_enabled=true` path is only a scaffold: it uses

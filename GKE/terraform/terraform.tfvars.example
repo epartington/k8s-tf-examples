@@ -92,6 +92,11 @@ allowed_source_ranges = ["203.0.113.0/24"]
 # FQDN for the managed TLS cert. Leave empty to derive "<static-ip>.nip.io".
 domain = ""
 
+# Bring your own cert instead of the Google-managed one: set the name of an existing
+# global pre-shared SSL certificate (gcloud compute ssl-certificates create ... --global).
+# Leave empty to provision a free Google-managed cert for the domain above.
+# tls_cert_name = "airs-gw-byo"
+
 # MCP endpoint hostname (added as a SAN on the same cert, routed to port 8788
 # through the same LB + Cloud Armor). Leave empty to derive "mcp.<gateway-domain>";
 # with the nip.io fallback "mcp.<ip>.nip.io" resolves to the same LB IP for free.

@@ -45,6 +45,10 @@ locals {
   # Domains on the managed cert: add the MCP SAN only when MCP is enabled.
   cert_domains = local.mcp_enabled ? [local.domain, local.mcp_domain] : [local.domain]
 
+  # Cert referenced by the Ingress: an existing pre-shared SSL cert (BYO) when
+  # tls_cert_name is set, otherwise the Google-managed cert created below.
+  cert_name = var.tls_cert_name != "" ? var.tls_cert_name : google_compute_managed_ssl_certificate.cert[0].name
+
   # Cloud Armor allows at most 10 CIDRs per rule's src_ip_ranges, so split the
   # allowlist into chunks of 10 and emit one allow rule per chunk.
   allowed_source_range_chunks = chunklist(var.allowed_source_ranges, 10)
@@ -85,7 +89,9 @@ resource "google_compute_security_policy" "armor" {
 }
 
 # Google-managed TLS cert, referenced by the Ingress as a pre-shared cert.
+# Skipped when a pre-shared cert is supplied via tls_cert_name (BYO).
 resource "google_compute_managed_ssl_certificate" "cert" {
+  count   = var.tls_cert_name == "" ? 1 : 0
   name    = var.managed_cert_name
   project = var.project_id
 
@@ -167,7 +173,7 @@ resource "kubernetes_ingress_v1" "gateway" {
     annotations = {
       "kubernetes.io/ingress.class"                 = "gce"
       "kubernetes.io/ingress.global-static-ip-name" = local.static_ip_name
-      "ingress.gcp.kubernetes.io/pre-shared-cert"   = google_compute_managed_ssl_certificate.cert.name
+      "ingress.gcp.kubernetes.io/pre-shared-cert"   = local.cert_name
       "kubernetes.io/ingress.allow-http"            = "false"
     }
   }
