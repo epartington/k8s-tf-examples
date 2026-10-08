@@ -19,7 +19,8 @@ k8s-tf-examples/
 
 Start from [GKE/terraform/README.md](GKE/terraform/README.md) — it is the reference
 implementation. **AKS** and **EKS** are complete parallel implementations (all six stages,
-validated; not yet applied end-to-end against a live subscription/account).
+validated). **AKS** has been applied end-to-end against a live subscription (POV, Azure AI
+Foundry); **EKS** is written and validated but not yet applied.
 
 ## Staged layout (every provider)
 

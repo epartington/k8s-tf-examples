@@ -1,8 +1,9 @@
 # POV: AKS + PRISMA AIRS / Portkey AI Gateway (Terraform)
 
-> **Status: implemented (unapplied).** This mirrors the completed [GKE](../GKE/) project for
-> **Azure AKS**. All six stages are written and `terraform validate`-clean, but have not yet
-> been applied end-to-end against a live subscription. See
+> **Status: implemented and deployed.** This mirrors the completed [GKE](../GKE/) project for
+> **Azure AKS**. All six stages are written, `terraform validate`-clean, and have been
+> **applied end-to-end against a live subscription** (POV): private cluster, gateway, and
+> WAF-protected App Gateway up, with keyless Workload Identity to Azure AI Foundry verified. See
 > [terraform/README.md](terraform/README.md) for the apply loop, prerequisites, and the
 > per-stage READMEs; the GKE→Azure mapping below captures the design.
 
