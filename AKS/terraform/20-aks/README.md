@@ -8,7 +8,8 @@ creation is typically ~5–10 min.**
 ## Creates
 
 - `azurerm_kubernetes_cluster.aks` — system node pool (`node_count` × `vm_size`)
-  in the node subnet, Azure CNI **overlay**, `load_balancer_sku = standard`,
+  in the node subnet, **traditional Azure CNI** (pod IPs from the node subnet, so
+  the App Gateway/AGIC can reach them — not overlay), `load_balancer_sku = standard`,
   `outbound_type = userAssignedNATGateway`, `oidc_issuer_enabled = true`,
   `workload_identity_enabled = true`, and
   `api_server_access_profile.authorized_ip_ranges = authorized_networks`.

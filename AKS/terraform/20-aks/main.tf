@@ -51,12 +51,14 @@ resource "azurerm_kubernetes_cluster" "aks" {
     type = "SystemAssigned"
   }
 
-  # Azure CNI overlay; egress bound to the pre-associated user NAT Gateway.
+  # Traditional Azure CNI: pods get VNet-routable IPs from the node subnet, so the
+  # App Gateway (AGIC targets pod IPs) can reach them. Do NOT use CNI overlay here —
+  # overlay pod IPs aren't routable from the App Gateway subnet, which breaks AGIC.
+  # Egress bound to the pre-associated user NAT Gateway.
   network_profile {
-    network_plugin      = "azure"
-    network_plugin_mode = "overlay"
-    load_balancer_sku   = "standard"
-    outbound_type       = "userAssignedNATGateway"
+    network_plugin    = "azure"
+    load_balancer_sku = "standard"
+    outbound_type     = "userAssignedNATGateway"
   }
 
   # Public API server endpoint restricted to the operator/CI egress CIDRs so

@@ -18,7 +18,8 @@ pattern. See [../README.md](../README.md) for the GKE→Azure mapping table.
 
 ## Architecture
 
-- **Isolated VNet** with a VNet-integrated AKS cluster (Azure CNI overlay, public API
+- **Isolated VNet** with a VNet-integrated AKS cluster (traditional Azure CNI so pod
+  IPs are VNet-routable for AGIC — not overlay; public API
   server endpoint restricted to `authorized_networks`).
 - **NAT Gateway** for egress (image pulls + reaching `api.portkey.ai` / `albus.portkey.ai`).
 - **Entra Workload Identity**: a user-assigned managed identity with the

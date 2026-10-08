@@ -14,7 +14,9 @@ resource "azurerm_virtual_network" "vnet" {
   tags                = var.tags
 }
 
-# Subnet for AKS nodes (pods use Azure CNI overlay, so they don't consume this range).
+# Subnet for AKS nodes AND pods: traditional Azure CNI gives pods VNet-routable IPs
+# from this range (required so the App Gateway/AGIC can reach pod IPs). Size it for
+# nodes + (max_pods x nodes).
 resource "azurerm_subnet" "aks" {
   name                 = var.aks_subnet_name
   resource_group_name  = azurerm_resource_group.main.name
