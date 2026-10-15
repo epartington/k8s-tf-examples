@@ -79,3 +79,7 @@ Ready.
   `image_overrides = { gatewayImage = { tag = "2.22.0" } }`.
 - **Secrets in output.** The `helm_release` values are wrapped in `sensitive()`
   (parity with GKE/AKS) so credentials aren't echoed into plan/apply output.
+- **Optional: Datadog OTEL sidecar.** Set `enable_datadog_otel = true` to run a
+  Datadog Agent sidecar and push OTLP (latency, token usage, cost attribution, error
+  rates) to it on `localhost:4318` — mirrors the ECS Fargate per-task sidecar pattern.
+  See [datadog/README.md](datadog/README.md).

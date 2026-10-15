@@ -1,0 +1,28 @@
+# Datadog OTEL sidecar — optional add-on for the EKS gateway (stage 40-aigateway).
+# Add these to your gitignored EKS/terraform/terraform.tfvars, then re-apply stage 40.
+# Leave enable_datadog_otel unset/false to keep it off (GKE/AKS are unaffected).
+
+enable_datadog_otel = true
+
+# Datadog site (US1 / app.datadoghq.com = datadoghq.com — the default). Change for
+# EU/US3/US5/AP1: datadoghq.eu, us3.datadoghq.com, us5.datadoghq.com, ap1.datadoghq.com.
+# datadog_site = "datadoghq.com"
+
+# Single Datadog service everything folds into (match the gateway bundle's hardcoded
+# service.name). Leave as the default unless you know the hardcode changed.
+# otel_service_name = "portkey"
+
+# DD_SERVICE on the sidecar, and the env tag.
+# datadog_service = "airs-gw"
+# datadog_env     = "aws"
+
+# SSRF allowlist — MUST keep the loopback set or the OTLP push to the sidecar is blocked.
+# Append any other hosts your gateway must reach (host-only match REPLACES the defaults).
+# otel_trusted_custom_hosts = "localhost,127.0.0.1,::1"
+
+# Datadog Agent image — use the SAME image you will run in the ECS Fargate task.
+# datadog_agent_image = "gcr.io/datadoghq/agent:7"
+
+# API key — SECRET. Terraform creates the datadog-otel cluster Secret (key dd_api_key)
+# from this. Put the real value in terraform.tfvars (gitignored), not here.
+datadog_api_key = "<your-datadog-api-key>"
