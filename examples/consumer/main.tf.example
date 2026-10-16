@@ -1,0 +1,53 @@
+# Example downstream consumer (AKS/azurerm shown — swap backend + data block for
+# your cloud per README.md). Rename to main.tf in your own repo to use it.
+#
+# It keeps its OWN state in the same backend under apps/<project>, reads the
+# platform's 90-platform contract, and shows how to reference the outputs.
+
+terraform {
+  required_version = ">= 1.5.0"
+
+  # Consumer state: SAME Storage Account/container as the platform, OWN key.
+  backend "azurerm" {
+    resource_group_name  = "ce2-epart-aks-tfstate-rg"
+    storage_account_name = "epartakstfstate01"
+    container_name       = "tfstate"
+    key                  = "apps/myapp.tfstate"
+  }
+}
+
+# Read the platform's published contract (never the internal stage states).
+data "terraform_remote_state" "platform" {
+  backend = "azurerm"
+  config = {
+    resource_group_name  = "ce2-epart-aks-tfstate-rg"
+    storage_account_name = "epartakstfstate01"
+    container_name       = "tfstate"
+    key                  = "90-platform.tfstate"
+  }
+}
+
+locals {
+  p = data.terraform_remote_state.platform.outputs
+}
+
+# Your resources go here, built on the platform. For example, reference the cluster,
+# the gateway endpoint, or the model service:
+#
+#   local.p.cluster_name
+#   local.p.gateway_url            # call the deployed AI gateway
+#   local.p.gateway_namespace      # deploy alongside the gateway
+#   local.p.foundry_endpoint       # (AKS) the model backend
+#   local.p.oidc_issuer_url        # (AKS) federate your own workload identity
+
+output "platform_cloud" {
+  value = local.p.cloud
+}
+
+output "platform_gateway_url" {
+  value = local.p.gateway_url
+}
+
+output "platform_model_backend" {
+  value = local.p.model_backend
+}

@@ -35,11 +35,29 @@ in numeric order; each later stage reads earlier outputs via `terraform_remote_s
 | `30-iam`       | Cloud identity for the gateway pod (WI/IRSA) + model-service role binding. |
 | `40-aigateway`   | Namespace + `helm_release` of `airs-gw` (mostly cloud-agnostic). |
 | `50-ingress`   | WAF/IP allowlist, managed TLS cert, HTTPS load balancer / Ingress. |
+| `90-platform`  | Read-only aggregation: re-exports a **stable output contract** for downstream projects. No infra. |
 
-Stage `00-bootstrap` uses **local** state to create the remote backend; stages `10`–`50`
+Stage `00-bootstrap` uses **local** state to create the remote backend; stages `10`–`90`
 use the remote backend with a per-stage `prefix`/`key`. The state bucket/account name is set
 **once** in `terraform.tfvars` and passed to each stage at `init` via `-backend-config` — it
 is never hardcoded in a `backend {}` block.
+
+## Consuming this platform (downstream projects)
+
+This repo is a **base layer**: other projects read its outputs and build on them.
+
+- The **public contract is `90-platform`** — a read-only stage that re-exports a curated,
+  stable output set into one state file (`90-platform` prefix/key). Downstream repos read
+  **only** that state via `terraform_remote_state`, never the internal stage states, so you
+  can refactor stages without breaking them. **Outputs are additive-only** — never rename or
+  remove one (the `40-portkey → 40-aigateway` rename changed a state key and would have
+  broken consumers; `90-platform` exists to prevent that).
+- **Consumer state lives in the same backend** (bucket / Storage Account / lock table) under
+  a reserved key namespace — platform owns the numbered keys + `90-platform`; consumers use
+  `apps/<project>…`. Locking is shared across keys automatically.
+- Full wiring per cloud + a template: [examples/consumer/](examples/consumer/). Note that
+  `terraform_remote_state` exposes the whole `90-platform` state (incl. sensitive outputs),
+  so grant state-bucket read only to trusted consumers.
 
 ## How it is applied
 

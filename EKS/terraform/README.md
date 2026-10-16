@@ -149,7 +149,7 @@ Terraform overlays the AWS-specific settings on top (IRSA SA annotation,
    at init:
 
    ```sh
-   for stage in 10-network 20-eks 30-iam 40-aigateway 50-ingress; do
+   for stage in 10-network 20-eks 30-iam 40-aigateway 50-ingress 90-platform; do
      cd "$stage"
      terraform init \
        -backend-config="bucket=$(terraform -chdir=../00-bootstrap output -raw state_bucket)" \
@@ -195,10 +195,24 @@ Terraform overlays the AWS-specific settings on top (IRSA SA annotation,
 Destroy in reverse order (50 → 00):
 
 ```sh
-for stage in 50-ingress 40-aigateway 30-iam 20-eks 10-network; do
+for stage in 90-platform 50-ingress 40-aigateway 30-iam 20-eks 10-network; do
   terraform -chdir="$stage" destroy -var-file=../terraform.tfvars
 done
 # 00-bootstrap last; the state bucket has prevent_destroy — empty and remove it
 # manually if desired (aws s3 rb s3://<bucket> --force).
 terraform -chdir=00-bootstrap destroy -var-file=../terraform.tfvars
 ```
+
+## Consuming this platform
+
+Other projects build on this one by reading its **`90-platform`** output contract (a
+read-only stage that re-exports a stable, curated output set) and keeping their own
+state in the **same backend** under a reserved `apps/<project>` key namespace.
+
+- Contract + per-cloud read snippet: [90-platform/README.md](90-platform/README.md)
+- Full consumer wiring + template: [examples/consumer](../../examples/consumer/)
+
+Treat the `90-platform` outputs as a versioned API — **additive changes only** (never
+rename/remove), since downstream repos depend on them. Reading remote state exposes the
+whole `90-platform` state (incl. sensitive outputs), so grant state-backend read only to
+trusted consumers.
