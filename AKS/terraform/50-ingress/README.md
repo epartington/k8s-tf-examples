@@ -111,6 +111,20 @@ standalone behavior**; the second mode exists for running under a downstream app
 - Switching modes is reversible: set it back to `keyvault` and re-apply to return to the self-signed
   Key Vault cert. (`ssl_certificate` is in the App Gateway's `ignore_changes`, so AGIC-uploaded certs —
   from this mode or from downstream apps Ingresses — are not reverted by a Terraform apply.)
+
+### Who owns the gateway Ingress — `create_gateway_ingress` (default true)
+
+`create_gateway_ingress` (default **true**) makes this stage create the gateway/MCP Ingress — the
+normal self-contained behavior. Set it **false** only when a downstream apps project routes the gateway
+through its **own** in-cluster controller instead of straight to the gateway Service — e.g.
+`k8s-tf-examples-apps` sends the gateway host through **Traefik** so it can add an Okta-gated `/metrics`
+route (AGIC cannot own the same host from two namespaces, so this stage must yield the Ingress).
+
+- **Standalone: keep `true`.** This stage owns the gateway Ingress and TLS as usual.
+- **`false`:** this stage creates no gateway Ingress; the apps project provides it (and owns the gateway
+  host's TLS, so `gateway_tls_mode` is irrelevant). The App Gateway, WAF, cert machinery, and all other
+  stages are unchanged. **Flipping this on an existing deploy briefly drops the gateway's external
+  routing** until the apps-side Ingress is applied — do the two in quick succession.
 - **Domains.** With a real domain, point A records for `<domain>` and
   `mcp.<domain>` at `ingress_ip`. The nip.io fallback resolves both automatically.
 - **Behind a TLS-inspecting proxy?** If `az`/`kubectl`/`curl` fail with a

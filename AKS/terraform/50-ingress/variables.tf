@@ -136,6 +136,12 @@ variable "ingress_name" {
   default     = "airs-gw"
 }
 
+variable "create_gateway_ingress" {
+  type        = bool
+  description = "Whether THIS stage creates the gateway/MCP Ingress (default true = standalone). Set false only when a downstream apps project provides the gateway Ingress via its own in-cluster controller (e.g. Traefik) — then that project also owns the gateway host's TLS. See the comment on kubernetes_ingress_v1.gateway and the README."
+  default     = true
+}
+
 variable "ingress_class_name" {
   type        = string
   description = "Ingress class AGIC watches."
