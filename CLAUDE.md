@@ -91,6 +91,11 @@ This repo is a **base layer**: other projects read its outputs and build on them
 - Run `terraform fmt` and `terraform validate` before proposing changes. Validate needs
   `terraform init -backend=false` first; `40-aigateway` also needs a real `values.yaml` present
   (it uses `file()`), so it can't be validated without one.
+- **Gateway TLS mode (AKS).** `50-ingress` `var.gateway_tls_mode` defaults to `keyvault` — the original
+  **self-contained** behavior (self-signed/KV cert on the App Gateway). An optional `cert-manager` mode
+  issues a browser-trusted cert instead, but **requires an in-cluster cert-manager + ClusterIssuer**
+  provided by the downstream apps project (`k8s-tf-examples-apps`). Standalone deploys must keep the
+  default; see [AKS/terraform/50-ingress/README.md](AKS/terraform/50-ingress/README.md#gateway-tls-mode--keyvault-default-vs-cert-manager).
 - Keep the three providers structurally parallel: same stage numbers (00-bootstrap →
   50-ingress) and the same console-values + overlay pattern. All three (GKE, AKS, EKS)
   are now complete parallels — when changing one, apply the equivalent change to the

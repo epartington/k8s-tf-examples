@@ -286,6 +286,11 @@ resource "azurerm_application_gateway" "appgw" {
       url_path_map,
       redirect_configuration,
       frontend_port,
+      # ssl_certificate: AGIC uploads certs here when any Ingress uses cert-manager TLS (the gateway in
+      # gateway_tls_mode="cert-manager", and/or downstream apps-layer Ingresses). Ignoring it lets AGIC
+      # manage those certs without Terraform reverting them. The keyvault-mode cert below is created on
+      # first apply, then left to AGIC. (In keyvault-only standalone use this is simply inert.)
+      ssl_certificate,
       tags,
     ]
   }
@@ -340,15 +345,34 @@ resource "kubernetes_ingress_v1" "gateway" {
   metadata {
     name      = var.ingress_name
     namespace = local.namespace
-    annotations = {
-      "appgw.ingress.kubernetes.io/ssl-redirect"          = "true"
-      "appgw.ingress.kubernetes.io/health-probe-path"     = var.health_check_path
-      "appgw.ingress.kubernetes.io/appgw-ssl-certificate" = var.cert_name
-    }
+    # TLS source depends on gateway_tls_mode (default "keyvault" = original standalone behavior):
+    #   keyvault     -> App Gateway uses the Key Vault cert named by `appgw-ssl-certificate`.
+    #   cert-manager -> in-cluster cert-manager issues a trusted cert into the `tls` block below,
+    #                   which AGIC uploads to the App Gateway (requires cert-manager + ClusterIssuer).
+    annotations = merge(
+      {
+        "appgw.ingress.kubernetes.io/ssl-redirect"      = "true"
+        "appgw.ingress.kubernetes.io/health-probe-path" = var.health_check_path
+      },
+      var.gateway_tls_mode == "keyvault" ? {
+        "appgw.ingress.kubernetes.io/appgw-ssl-certificate" = var.cert_name
+        } : {
+        "cert-manager.io/cluster-issuer" = var.cert_manager_cluster_issuer
+      }
+    )
   }
 
   spec {
     ingress_class_name = var.ingress_class_name
+
+    # cert-manager mode only: issue a trusted cert for the gateway (+ MCP) hosts into gateway_tls_secret_name.
+    dynamic "tls" {
+      for_each = var.gateway_tls_mode == "cert-manager" ? [1] : []
+      content {
+        hosts       = local.cert_dns_names
+        secret_name = var.gateway_tls_secret_name
+      }
+    }
 
     # Gateway on the primary domain.
     rule {

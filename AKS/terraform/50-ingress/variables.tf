@@ -97,6 +97,39 @@ variable "tls_cert_keyvault_secret_id" {
   default     = ""
 }
 
+# --- Gateway TLS mode (added for the downstream apps-layer; default preserves standalone behavior) ---
+#
+# "keyvault" (DEFAULT, original standalone behavior): the App Gateway terminates TLS with a Key Vault
+#   certificate (self-signed by default, or tls_cert_keyvault_secret_id), referenced by AGIC via the
+#   `appgw.ingress.kubernetes.io/appgw-ssl-certificate` annotation. No in-cluster dependencies.
+#
+# "cert-manager": the gateway/MCP Ingress instead carries a `cert-manager.io/cluster-issuer`
+#   annotation + a `tls` block, so an IN-CLUSTER cert-manager issues a browser-trusted cert that AGIC
+#   uploads to the App Gateway. REQUIRES cert-manager + the named ClusterIssuer to already exist in the
+#   cluster (e.g. installed by a downstream apps project such as k8s-tf-examples-apps AKS/dns-tls).
+#   Use this only when running with that apps layer; standalone deployments should keep "keyvault".
+variable "gateway_tls_mode" {
+  type        = string
+  description = "How the App Gateway gets its gateway/MCP TLS cert: 'keyvault' (default, standalone) or 'cert-manager' (requires in-cluster cert-manager + ClusterIssuer). See comment above."
+  default     = "keyvault"
+  validation {
+    condition     = contains(["keyvault", "cert-manager"], var.gateway_tls_mode)
+    error_message = "gateway_tls_mode must be 'keyvault' or 'cert-manager'."
+  }
+}
+
+variable "cert_manager_cluster_issuer" {
+  type        = string
+  description = "cert-manager ClusterIssuer name. Used only when gateway_tls_mode = 'cert-manager'."
+  default     = "letsencrypt-prod"
+}
+
+variable "gateway_tls_secret_name" {
+  type        = string
+  description = "k8s Secret cert-manager writes the gateway/MCP cert into. Used only when gateway_tls_mode = 'cert-manager'."
+  default     = "airs-gw-tls"
+}
+
 variable "ingress_name" {
   type        = string
   description = "Name of the Ingress object."

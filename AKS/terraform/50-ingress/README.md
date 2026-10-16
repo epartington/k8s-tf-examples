@@ -83,6 +83,34 @@ cd ..
   operate, but breaks the "stage 20 = cluster only" parity with GKE.
 - **Self-signed TLS.** Browsers/clients warn on the self-signed cert; fine for a
   POV. Use `curl -k`, or set `tls_cert_keyvault_secret_id` to a real cert.
+
+### Gateway TLS mode — `keyvault` (default) vs `cert-manager`
+
+`gateway_tls_mode` selects how the gateway/MCP hosts get their TLS cert. The default is **unchanged
+standalone behavior**; the second mode exists for running under a downstream apps layer.
+
+| | `keyvault` (default) | `cert-manager` |
+|---|---|---|
+| Cert source | Key Vault cert (self-signed, or `tls_cert_keyvault_secret_id`) | Let's Encrypt via **in-cluster cert-manager** |
+| Ingress wiring | `appgw-ssl-certificate` annotation | `cert-manager.io/cluster-issuer` annotation + `tls` block |
+| Trusted in browsers | No (self-signed) unless you supply a real KV cert | Yes |
+| **Cluster prerequisites** | **None** (self-contained) | **cert-manager + the named `ClusterIssuer` must already exist** |
+
+- **Standalone / self-contained deploys: keep `keyvault`** (the default). Nothing else is required and
+  this stage behaves exactly as before — the `cert-manager` code paths are inert.
+- **`cert-manager` mode** only works when something has already installed cert-manager and a
+  `ClusterIssuer` (name via `cert_manager_cluster_issuer`, default `letsencrypt-prod`) **in this
+  cluster** — e.g. the companion apps project **`k8s-tf-examples-apps`** (`AKS/dns-tls/`), which also
+  manages the public DNS zone + A records the ACME DNS-01 challenge and the hostnames need. Enabling it
+  without that in place will leave the gateway Ingress with no usable cert. Set it in `terraform.tfvars`:
+  ```hcl
+  gateway_tls_mode = "cert-manager"
+  domain           = "aigw.example.com"   # real FQDN with an A record -> ingress_ip
+  mcp_domain       = "mcp.example.com"
+  ```
+- Switching modes is reversible: set it back to `keyvault` and re-apply to return to the self-signed
+  Key Vault cert. (`ssl_certificate` is in the App Gateway's `ignore_changes`, so AGIC-uploaded certs —
+  from this mode or from downstream apps Ingresses — are not reverted by a Terraform apply.)
 - **Domains.** With a real domain, point A records for `<domain>` and
   `mcp.<domain>` at `ingress_ip`. The nip.io fallback resolves both automatically.
 - **Behind a TLS-inspecting proxy?** If `az`/`kubectl`/`curl` fail with a
