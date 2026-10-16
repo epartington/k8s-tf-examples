@@ -341,7 +341,13 @@ resource "helm_release" "agic" {
 }
 
 # --- Ingress fronting the gateway (and MCP) through the App Gateway ---
+# create_gateway_ingress (default true) = this stage owns the gateway/MCP Ingress (standalone). Set
+# false ONLY when a downstream apps project provides its own gateway/MCP Ingress through an in-cluster
+# controller (e.g. k8s-tf-examples-apps routes the gateway via Traefik to add Okta-gated /metrics). In
+# that mode the apps layer also owns the gateway host's TLS, so gateway_tls_mode is not used here.
 resource "kubernetes_ingress_v1" "gateway" {
+  count = var.create_gateway_ingress ? 1 : 0
+
   metadata {
     name      = var.ingress_name
     namespace = local.namespace

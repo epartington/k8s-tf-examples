@@ -140,3 +140,9 @@ key_vault_name = "airs-gw-kv-00001"
 # cert_manager_cluster_issuer = "letsencrypt-prod"
 # gateway_tls_secret_name     = "airs-gw-tls"
 # (with cert-manager mode, set real FQDNs above, e.g. domain = "aigw.example.com", mcp_domain = "mcp.example.com")
+
+# --- Who owns the gateway Ingress (default true = standalone) ---
+# Set false ONLY when a downstream apps project provides the gateway/MCP Ingress via its own in-cluster
+# controller (e.g. k8s-tf-examples-apps routes the gateway through Traefik for an Okta-gated /metrics).
+# When false, this stage creates no gateway Ingress and the apps project owns the gateway host TLS.
+# create_gateway_ingress = false
