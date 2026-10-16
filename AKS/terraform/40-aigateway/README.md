@@ -95,3 +95,6 @@ surface here as a pod-start failure.
 - **Secrets in output.** The `helm_release` values are wrapped in `sensitive()`
   (parity with GKE) so the console `values.yaml` credentials aren't echoed into
   `plan`/`apply` output or CI logs.
+- **Optional: Datadog OTEL sidecar.** Set `enable_datadog_otel = true` to run a
+  Datadog Agent sidecar and push OTLP (APM traces, aggregated analytics, AI
+  Observability) to it on `localhost:4318`. See [datadog/README.md](datadog/README.md).
