@@ -130,3 +130,13 @@ key_vault_name = "airs-gw-kv-00001"
 
 # Bring your own cert instead of self-signed: set the Key Vault secret ID.
 # tls_cert_keyvault_secret_id = "https://<kv>.vault.azure.net/secrets/<cert>/<version>"
+
+# --- Gateway TLS mode (default "keyvault" = standalone behavior above) ---
+# Leave unset/"keyvault" for a self-contained deploy (Key Vault cert on the App Gateway).
+# Set "cert-manager" ONLY when an in-cluster cert-manager + ClusterIssuer exist (e.g. deployed by the
+# downstream apps project k8s-tf-examples-apps). Then the gateway/MCP Ingress gets a browser-trusted
+# Let's Encrypt cert instead of the self-signed one. See 50-ingress/README.md.
+# gateway_tls_mode            = "cert-manager"
+# cert_manager_cluster_issuer = "letsencrypt-prod"
+# gateway_tls_secret_name     = "airs-gw-tls"
+# (with cert-manager mode, set real FQDNs above, e.g. domain = "aigw.example.com", mcp_domain = "mcp.example.com")
