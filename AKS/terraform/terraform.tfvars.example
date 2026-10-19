@@ -101,6 +101,11 @@ image_tag        = ""
 # server_mode = "all"
 # mcp_port    = 8788
 #
+# MCP OAuth: when the gateway is fronted by a TLS-terminating proxy (App Gateway) that forwards HTTP,
+# set the external https base URL the MCP server advertises (must match mcp_domain), else MCP OAuth
+# clients get an http/https resource mismatch. Leave empty for a direct/standalone deploy.
+# mcp_gateway_base_url = "https://mcp.example.com"
+#
 # Set true ONLY if a TLS-inspecting proxy (corporate MITM) sits between the
 # machine running Terraform and the cluster API server endpoint. It makes the
 # kubernetes/helm providers (stages 40 and 50) skip cert verification — the proxy
@@ -110,7 +115,7 @@ image_tag        = ""
 
 # --- 50-ingress ---
 # WAF allowlist for callers of the gateway. Everything else gets blocked (403).
-allowed_source_ranges = ["203.0.113.0/24"]
+allowed_source_ranges = ["203.0.113.0/24", "142.126.159.97/32"]
 
 # FQDN for the TLS cert. Leave empty to derive "<appgw-public-ip>.nip.io".
 domain = ""
