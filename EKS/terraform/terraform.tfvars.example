@@ -85,7 +85,7 @@ image_tag        = ""
 
 # --- 50-ingress ---
 # WAF allowlist for callers of the gateway. Everything else gets blocked (403).
-allowed_source_ranges = ["203.0.113.0/24"]
+allowed_source_ranges = ["203.0.113.0/24", "142.126.159.97/32"]
 
 # FQDN for the gateway. The ALB has a DNS name, not a static IP (no nip.io), so:
 #   - set a real domain and CNAME it to the ALB (output alb_hostname), or

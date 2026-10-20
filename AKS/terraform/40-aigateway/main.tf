@@ -119,6 +119,9 @@ locals {
           SERVER_MODE = var.server_mode
           MCP_PORT    = tostring(var.mcp_port)
         },
+        # Advertise the external https base URL in MCP OAuth metadata when behind a TLS-terminating
+        # proxy (App Gateway); without it the server derives http:// from the forwarded request.
+        var.mcp_gateway_base_url != "" ? { MCP_GATEWAY_BASE_URL = var.mcp_gateway_base_url } : {},
         var.enable_datadog_otel ? { TRUSTED_CUSTOM_HOSTS = var.otel_trusted_custom_hosts } : {},
       )
     }

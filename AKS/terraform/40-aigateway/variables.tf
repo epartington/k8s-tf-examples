@@ -108,6 +108,12 @@ variable "mcp_port" {
   default     = 8788
 }
 
+variable "mcp_gateway_base_url" {
+  type        = string
+  description = "External base URL (scheme + host, no path) the MCP server advertises in its OAuth protected-resource metadata, e.g. https://mcp.example.com. REQUIRED when the gateway sits behind a TLS-terminating proxy (App Gateway) that forwards HTTP — otherwise the server derives the metadata 'resource' from the inbound (http) scheme and MCP OAuth clients reject the http/https mismatch. Leave empty for a direct/standalone deploy. Sets the chart's MCP_GATEWAY_BASE_URL env."
+  default     = ""
+}
+
 variable "cluster_insecure_tls" {
   type        = bool
   description = "Skip TLS verification of the cluster API server endpoint for the kubernetes/helm providers. Set true ONLY when a TLS-inspecting proxy (corporate MITM) sits between the operator and the cluster, so the endpoint presents the proxy's cert instead of the AKS cluster CA. The client certificate still authenticates the request. Leave false for a normal secure connection."
